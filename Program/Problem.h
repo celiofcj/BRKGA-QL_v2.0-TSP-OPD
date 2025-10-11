@@ -18,12 +18,22 @@ struct TNode
 	int id;
 	double x;
 	double y;
-}; 
+};
+
+
+struct TDelivery
+{
+ int id;
+ int value;
+ int origin;
+ int destination;
+};
 
 //------ DEFINITION OF GLOBAL CONSTANTS AND VARIABLES OF SPECIFIC PROBLEM  --------
 
 static std::vector <std::vector <double> > dist;	// matrix with Euclidean distance
-static std::vector <TNode> node;					// vector of TSP nodes
+static std::vector <TNode> nodes;					// vector of TSP nodes
+static std::vector <TDelivery> deliveries;
 
 
 
