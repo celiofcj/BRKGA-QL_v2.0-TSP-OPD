@@ -34,6 +34,7 @@ struct TDelivery
 static std::vector <std::vector <double> > dist;	// matrix with Euclidean distance
 static std::vector <TNode> nodes;					// vector of TSP nodes
 static std::vector <TDelivery> deliveries;
+static int capacity;
 
 
 
@@ -126,3 +127,5 @@ void LS4(TSol &s, int n);
 void FreeMemoryProblem();
 
 #endif
+
+void printSolution(TSol &s, int n);

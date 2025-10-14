@@ -1,335 +1,195 @@
-#include "Problem.h"
-#include "LazyPropagationSegmentTree.h"
- 
-// Sort TSol by random-keys
-bool sortByRk(const TVecSol &lhs, const TVecSol &rhs) { return lhs.rk < rhs.rk; }
-
-void ReadData(char nameTable[], int &n)
-{
-    char name[200] = "../Instances/";
-    strcat(name,nameTable);
-
-    FILE *arq;
-    arq = fopen(name,"r");
-
-    if (arq == NULL)
-    {
-        printf("\nERROR: File (%s) not found!\n",name);
-        getchar();
-        exit(1);
-    }
-
-    // => read data
-
-    // read instance head
-    char temp[100];
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-
-    // read node informations
-    int nAux = 0;
-    nodes.clear();
-    TNode nodeTemp;
-
-    char line[256];
-    while (fgets(line, sizeof(line), arq) != NULL)
-    {
-        if (line[0] == '\n' || line[0] == '\r') {
-            break;
-        }
-
-    	if (sscanf(line, "%d %lf %lf", &nodeTemp.id, &nodeTemp.x, &nodeTemp.y) == 0) exit(1);
-    	nodes.push_back(nodeTemp);
-
-    	nAux++;
-    }
-
-    // calculate the euclidean distance
-    dist.clear();
-    dist.resize(nAux, std::vector<double>(nAux));
-
-    for (int i=0; i<nAux; i++)
-    {
-    	for (int j=i; j<nAux; j++)
-    	{
-    		dist[i][j] = dist[j][i] = (floor (sqrt( (nodes[j].x - nodes[i].x) * (nodes[j].x - nodes[i].x) +
-    										        (nodes[j].y - nodes[i].y) * (nodes[j].y - nodes[i].y) ) + 0.5 ) )/1.0;
-    	}
-    }
-
-    TDelivery deliveryTemp;
-    while (!feof(arq))
-    {
-        if (fscanf(arq, "%d %d %d %d", &deliveryTemp.id, &deliveryTemp.value, &deliveryTemp.origin, &deliveryTemp.destination) == 0) exit(1);
-        deliveries.push_back(deliveryTemp);
-
-        nAux++;
-    }
-
-    n = nAux;
-
-    fclose(arq);
-
-    for (TNode node : nodes) {
-        printf("%d %lf %lf\n", node.id, node.x, node.y);
-    }
-
-    printf("deliveries:\n");
-
-    for (TDelivery delivery : deliveries) {
-        printf("%d %d %d %d\n", delivery.id, delivery.value, delivery.origin, delivery.destination);
-    }
-}
-
-void Decoder(TSol &s, int n, int nDec)
-{
-    // copy the random-key sequence of current solution
-    TSol temp = s;
-
-    // define decoder function based in the random-key of position n+1
-    int dec = floor(s.vec[n].rk*nDec)+1;
-    switch (dec)
-    {
-        case 1:
-            Dec1(s, n);
-            break;
-
-        // case 2:
-        //     Dec2(s, n);
-        //     break;
-        //
-        // case 3:
-        //     Dec3(s, n);
-        //     break;
-        //
-        // case 4:
-        //     Dec4(s, n);
-        //     break;
-        //
-        // case 5:
-        //     Dec5(s, n);
-        //     break;
-
-        default:
-            break;
-    }
-
-    // return initial random-key sequence and maintain the solution sequence
-    for (int i=0; i<n; i++){
-        s.vec[i].rk = temp.vec[i].rk;
-    }
-}
-
-void LocalSearch(TSol &s, int n, int nLS)
-{
-    // ***** we use a Random Variable Neighborhood Descent (RVND) as local search ****
-
- //    // current neighborhood
-	// int k = 1;
- //
- //    // predefined number of neighborhood moves
- //    std::vector <int> NSL;
- //    std::vector <int> NSLAux;
- //
- //    for (int i=1; i<=nLS; i++)
- //    {
- //        NSL.push_back(i);
- //        NSLAux.push_back(i);
- //    }
- //
-	// while (!NSL.empty())
-	// {
- //        // current objective function
- //        double foCurrent = s.ofv;
- //
- //        // randomly choose a neighborhood
- //        int pos = rand() % NSL.size();
- //        k = NSL[pos];
- //
- //        switch (k)
- //        {
- //            case 1:
- //                LS1(s, n);
- //                break;
- //
- //            case 2:
- //                LS2(s, n);
- //                break;
- //
- //            case 3:
- //                LS3(s, n);
- //                break;
- //
- //            case 4:
- //                LS4(s, n);
- //                break;
- //
- //            default:
- //                break;
- //        }
- //
- //        // we better the current solution
- //        if (s.ofv < foCurrent)
- //        {
- //            // refresh NSL
- //            NSL.clear();
- //            NSL = NSLAux;
- //        }
- //        else
- //        {
- //            // Remove N(n) from NSL
- //            NSL.erase(NSL.begin()+pos);
- //        }
-	// } //end while
-}
-
-double CalculateFitness(TSol s, int n, long nodeSize)
-{
-    printf("CalculateFitness: \n");
-    for (int i = 0; i <= n; i++) {
-        printf("%d: %d - %lf\n", i, s.vec[i].sol, s.vec[i].rk);
-    }
-
-    s.ofv = 0;
-    int index = 0;
-    while (s.vec[index].rk != -1)
-    {
-        s.ofv += dist[s.vec[index%n].sol][s.vec[(index+1)%n].sol];
-        index++;
-    }
-
-    index++;
-
-    while (index < n)
-    {
-        if (s.vec[index].rk != 0)
-        {
-            s.ofv -= deliveries[s.vec[index].sol].value;
-        }
-
-        index++;
-    }
-    // calculate objective function
-
-    return s.ofv;
-}
-
-void InitSolutionNodes(TSol &s, long size) {
-    printf("\nIniting Solution Nodes\n");
-    for (int i = 0; i < size; i++)
-    {
-        s.vec[i].sol = i;
-    }
-}
-
-void InitSolutionDeliveries(TSol &s, int n, long startingIndex) {
-    printf("Initing Deliveries\n");
-    for (int i = 0; i < n; i++) {
-        s.vec[startingIndex + i].sol = i;
-    }
-}
-
-int searchForNode(int idNode, std::vector <TVecSol> vec, int &i, int n, std::vector<int> &cache) {
-    if (cache[idNode] != -1) {
-        return cache[idNode];
-    }
-
-    while (i < n) {
-        int nodeIndex = vec[i].sol;
-
-        TNode node = nodes[nodeIndex];
-
-        cache[node.id] = i;
-
-        if (node.id == idNode)
-            return i;
-
-        i++;
-    }
-
-    printf("ERROR - SHOULD NEVER REACH THIS POINT!");
-    exit(1);
-}
-
-bool withinCapacity(int origin, int destination, int nodesQtd, LazyPropagationSegmentTree segment_tree) {
-    if (destination == 0)
-    {
-        destination = nodesQtd - 1;
-    }
-
-    int currentWeight = segment_tree.query(origin, destination-1);
-
-    printf("Current Weight: %d\n", currentWeight);
-
-    if (currentWeight < capacity) {
-        printf("Dentro da capacidade");
-        return true;
-    }
-
-    return false;
-}
-
-void updateWeight(int origin, int destination, int nodesQtd, int addend, LazyPropagationSegmentTree segment_tree) {
-    if (destination == 0)
-    {
-        destination = nodesQtd - 1;
-    }
-
-    segment_tree.update(origin, destination, addend);
-}
-
-void Dec1(TSol &s, int n) // sort
-{
-    // create a initial solution of the problem
-    // -1 is a indicating that the next chromossomes are deliveries
-    s.ofv = 0;
-
-    long nodesSize = nodes.size();
-
-    InitSolutionNodes(s, nodesSize);
-
-    InitSolutionDeliveries(s, n, nodesSize);
-
-    // sort nodes
-    sort(s.vec.begin(), s.vec.begin() + nodesSize, sortByRk);
-
-    sort(s.vec.begin() + nodesSize + 1, s.vec.end()-1, sortByRk);
-
-    std::vector<int> cache(n - nodesSize - 1, -1);
-    int indexVec = 0;
-
-    LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(nodesSize);
-    segment_tree.build(new int[nodesSize] {});
-
-    for (int i = nodesSize; i < n; i++)
-    {
-        TDelivery delivery = deliveries[s.vec[i].sol];
-
-        //printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, delivery.id, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
-        int origin = searchForNode(delivery.origin, s.vec, indexVec, nodesSize + 1, cache);
-        int destination = searchForNode(delivery.destination, s.vec, indexVec, nodesSize + 1, cache);
-
-        printf("Origin: %d, Destination: %d\n", origin, destination);
-        if ((origin < destination || destination == 0) && withinCapacity(origin, destination, nodesSize, segment_tree))
-        {
-            s.vec[i].rk = 1;
-            updateWeight(origin, destination, nodesSize, 1, segment_tree);
-        }
-        else
-        {
-            s.vec[i].rk = 0;
-        }
-    }
-
-    s.vec[n].sol = -1;
-
-    s.ofv = CalculateFitness(s,n, nodesSize);
-}
-
+// #include "Problem.h"
+//
+// // Sort TSol by random-keys
+// bool sortByRk(const TVecSol &lhs, const TVecSol &rhs) { return lhs.rk < rhs.rk; }
+//
+// void ReadData(char nameTable[], int &n)
+// {
+//     char name[200] = "../Instances/";
+//     strcat(name,nameTable);
+//
+//     FILE *arq;
+//     arq = fopen(name,"r");
+//
+//     if (arq == NULL)
+//     {
+//         printf("\nERROR: File (%s) not found!\n",name);
+//         getchar();
+//         exit(1);
+//     }
+//
+//     // => read data
+//
+//     // read instance head
+//     char temp[100];
+//     if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);;
+//     if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);;
+//     if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);;
+//     if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);;
+//     if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);;
+//     if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);;
+//
+//     // read node informations
+//     int nAux = 0;
+//     node.clear();
+//     TNode nodeTemp;
+//
+//     while (!feof(arq))
+//     {
+//     	if (fscanf(arq, "%d %lf %lf", &nodeTemp.id, &nodeTemp.x, &nodeTemp.y) == 0) exit(1);
+//     	node.push_back(nodeTemp);
+//
+//     	nAux++;
+//     }
+//     fclose(arq);
+//
+//     // calculate the euclidean distance
+//     dist.clear();
+//     dist.resize(nAux, std::vector<double>(nAux));
+//
+//     for (int i=0; i<nAux; i++)
+//     {
+//     	for (int j=i; j<nAux; j++)
+//     	{
+//     		dist[i][j] = dist[j][i] = (floor (sqrt( (node[j].x - node[i].x) * (node[j].x - node[i].x) +
+//     										        (node[j].y - node[i].y) * (node[j].y - node[i].y) ) + 0.5 ) )/1.0;
+//     	}
+//     }
+//
+//     n = nAux;
+// }
+//
+// void Decoder(TSol &s, int n, int nDec)
+// {
+//     // copy the random-key sequence of current solution
+//     TSol temp = s;
+//
+//     // define decoder function based in the random-key of position n+1
+//     int dec = floor(s.vec[n].rk*nDec)+1;
+//     switch (dec)
+//     {
+//         case 1:
+//             Dec1(s, n);
+//             break;
+//
+//         case 2:
+//             Dec2(s, n);
+//             break;
+//
+//         case 3:
+//             Dec3(s, n);
+//             break;
+//
+//         case 4:
+//             Dec4(s, n);
+//             break;
+//
+//         case 5:
+//             Dec5(s, n);
+//             break;
+//
+//         default:
+//             break;
+//     }
+//
+//     // return initial random-key sequence and maintain the solution sequence
+//     for (int i=0; i<n; i++){
+//         s.vec[i].rk = temp.vec[i].rk;
+//     }
+// }
+//
+// void LocalSearch(TSol &s, int n, int nLS)
+// {
+//     // ***** we use a Random Variable Neighborhood Descent (RVND) as local search ****
+//
+//     // current neighborhood
+// 	int k = 1;
+//
+//     // predefined number of neighborhood moves
+//     std::vector <int> NSL;
+//     std::vector <int> NSLAux;
+//
+//     for (int i=1; i<=nLS; i++)
+//     {
+//         NSL.push_back(i);
+//         NSLAux.push_back(i);
+//     }
+//
+// 	while (!NSL.empty())
+// 	{
+//         // current objective function
+//         double foCurrent = s.ofv;
+//
+//         // randomly choose a neighborhood
+//         int pos = rand() % NSL.size();
+//         k = NSL[pos];
+//
+//         switch (k)
+//         {
+//             case 1:
+//                 LS1(s, n);
+//                 break;
+//
+//             case 2:
+//                 LS2(s, n);
+//                 break;
+//
+//             case 3:
+//                 LS3(s, n);
+//                 break;
+//
+//             case 4:
+//                 LS4(s, n);
+//                 break;
+//
+//             default:
+//                 break;
+//         }
+//
+//         // we better the current solution
+//         if (s.ofv < foCurrent)
+//         {
+//             // refresh NSL
+//             NSL.clear();
+//             NSL = NSLAux;
+//         }
+//         else
+//         {
+//             // Remove N(n) from NSL
+//             NSL.erase(NSL.begin()+pos);
+//         }
+// 	} //end while
+// }
+//
+// double CalculateFitness(TSol s, int n)
+// {
+//     // calculate objective function
+//     s.ofv = 0;
+//     for (int i=0; i<n; i++){
+//         s.ofv += dist[s.vec[i%n].sol][s.vec[(i+1)%n].sol];
+//     }
+//
+//     return s.ofv;
+// }
+//
+// void Dec1(TSol &s, int n) // sort
+// {
+//     // create a initial solution of the problem
+//     s.ofv = 0;
+//     for (int j = 0; j < n+1; j++)
+// 	{
+//         if (j < n)
+// 		    s.vec[j].sol = j;
+//         else
+//             s.vec[j].sol = -1;
+// 	}
+//
+//     // sort random-key vector
+//     sort(s.vec.begin(), s.vec.end()-1, sortByRk);
+//
+//     s.ofv = CalculateFitness(s,n);
+// }
+//
 // void Dec2(TSol &s, int n) // 2-Opt
 // {
 //     // create a initial solution of the problem
@@ -882,18 +742,10 @@ void Dec1(TSol &s, int n) // sort
 //         }
 //     }
 // }
-
-void FreeMemoryProblem()
-{
-    //specific problem
-    dist.clear();
-    nodes.clear();
-    deliveries.clear();
-}
-
-void printSolution(TSol &s, int n)
-{
-    for (int i = 0; i < n; i++) {
-        printf("%d, %d, %lf\n", i, s.vec[i].sol, s.vec[i].rk);
-    }
-}
+//
+// void FreeMemoryProblem()
+// {
+//     //specific problem
+//     dist.clear();
+//     node.clear();
+// }

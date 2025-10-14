@@ -17,11 +17,15 @@ release: runTest
  
 OBJS2 = \
         $(TARGETDIR)/BRKGA_QL.o \
-        $(TARGETDIR)/Problem.o 
+        $(TARGETDIR)/Problem.o  \
+        $(TARGETDIR)/LazyPropagationSegmentTree.o  \
 
 $(TARGETDIR)/runTest: $(OBJS2)
 	$(CCC) $(CCFLAGS) -o $(TARGETDIR)/runTest $(OBJS2)
-    
+
+$(TARGETDIR)/Problem.o: LazyPropagationSegmentTree.h LazyPropagationSegmentTree.cpp
+	$(CCC) $(CCFLAGS) -c Problem.cpp -o $(TARGETDIR)/LazyPropagationSegmentTree.o
+
 $(TARGETDIR)/Problem.o: Problem.h Problem.cpp
 	$(CCC) $(CCFLAGS) -c Problem.cpp -o $(TARGETDIR)/Problem.o
 
@@ -34,7 +38,8 @@ test: runTest
 clean:
 	$(RM) \
 	$(TARGETDIR)/BRKGA_QL.o \
-	$(TARGETDIR)/Problem.o
+	$(TARGETDIR)/Problem.o  \
+	$(TARGETDIR)/LazyPropagationSegmentTree.o
     
 rebuild:
 	$(MAKE) clean

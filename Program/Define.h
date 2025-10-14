@@ -1,6 +1,10 @@
 #ifndef _DEFINE_H
 #define _DEFINE_H
+#include <chrono>
+#include <random>
 #include <vector>
+
+#include "Data.h"
 
 //------ DEFINITION OF GLOBAL CONSTANTS AND VARIABLES OF BRKGA-QL --------
 
