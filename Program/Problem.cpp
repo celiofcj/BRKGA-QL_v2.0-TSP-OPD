@@ -83,6 +83,8 @@ void ReadData(char nameTable[], int &n)
     for (TDelivery delivery : deliveries) {
         printf("%d %d %d %d\n", delivery.id, delivery.value, delivery.origin, delivery.destination);
     }
+
+    capacity = 5;
 }
 
 void Decoder(TSol &s, int n, int nDec)
@@ -189,37 +191,27 @@ void LocalSearch(TSol &s, int n, int nLS)
 
 double CalculateFitness(TSol s, int n, long nodeSize)
 {
-    printf("CalculateFitness: \n");
     for (int i = 0; i <= n; i++) {
-        printf("%d: %d - %lf\n", i, s.vec[i].sol, s.vec[i].rk);
+        // printf("%d: %d - %lf\n", i, s.vec[i].sol, s.vec[i].rk);
     }
-
     s.ofv = 0;
-    int index = 0;
-    while (s.vec[index].rk != -1)
-    {
-        s.ofv += dist[s.vec[index%n].sol][s.vec[(index+1)%n].sol];
-        index++;
-    }
 
-    index++;
+    for (int i=0 ; i < nodeSize; i++)
+     {
+        s.ofv += dist[s.vec[i%nodeSize].sol][s.vec[(i+1)%nodeSize].sol];
+     }
 
-    while (index < n)
+    for (int i=nodeSize; i < n; i++)
     {
-        if (s.vec[index].rk != 0)
-        {
-            s.ofv -= deliveries[s.vec[index].sol].value;
+        if (s.vec[i].sol != -1) {
+            s.ofv -= deliveries[s.vec[i].sol].value;
         }
-
-        index++;
     }
-    // calculate objective function
 
     return s.ofv;
 }
 
 void InitSolutionNodes(TSol &s, long size) {
-    printf("\nIniting Solution Nodes\n");
     for (int i = 0; i < size; i++)
     {
         s.vec[i].sol = i;
@@ -227,8 +219,7 @@ void InitSolutionNodes(TSol &s, long size) {
 }
 
 void InitSolutionDeliveries(TSol &s, int n, long startingIndex) {
-    printf("Initing Deliveries\n");
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i + startingIndex < n; i++) {
         s.vec[startingIndex + i].sol = i;
     }
 }
@@ -255,31 +246,51 @@ int searchForNode(int idNode, std::vector <TVecSol> vec, int &i, int n, std::vec
     exit(1);
 }
 
-bool withinCapacity(int origin, int destination, int nodesQtd, LazyPropagationSegmentTree segment_tree) {
+bool withinCapacity(int origin, int destination, int nodesQtd, LazyPropagationSegmentTree &segment_tree) {
     if (destination == 0)
     {
-        destination = nodesQtd - 1;
+        destination = nodesQtd;
     }
 
-    int currentWeight = segment_tree.query(origin, destination-1);
-
-    printf("Current Weight: %d\n", currentWeight);
-
-    if (currentWeight < capacity) {
-        printf("Dentro da capacidade");
-        return true;
-    }
-
-    return false;
+    return segment_tree.query(origin, destination - 1) < capacity;
 }
 
-void updateWeight(int origin, int destination, int nodesQtd, int addend, LazyPropagationSegmentTree segment_tree) {
+void updateWeight(int origin, int destination, int nodesQtd, int addend, LazyPropagationSegmentTree &segment_tree) {
     if (destination == 0)
     {
-        destination = nodesQtd - 1;
+        destination = nodesQtd;
     }
 
-    segment_tree.update(origin, destination, addend);
+    segment_tree.update(origin, destination - 1, addend);
+}
+
+void SelectDeliveries(TSol &s, int n, long nodesSize) {
+    std::vector<int> cache(n - nodesSize - 1, -1);
+    int indexVec = 0;
+
+    LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(nodesSize + 1);
+
+    for (int i = nodesSize; i < n; i++)
+    {
+        TDelivery delivery = deliveries[s.vec[i].sol];
+
+        // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, delivery.id, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
+        int origin = searchForNode(delivery.origin, s.vec, indexVec, nodesSize + 1, cache);
+        int destination = searchForNode(delivery.destination, s.vec, indexVec, nodesSize + 1, cache);
+
+        // printf("I: %d, Origin: %d, Destination: %d\n", i, origin, destination);
+
+        if ((origin < destination || (destination == 0 && origin < nodesSize - 1)) && withinCapacity(origin, destination, nodesSize, segment_tree))
+        {
+            // printf("Updating weight\n");
+            updateWeight(origin, destination, nodesSize, 1, segment_tree);
+            // printf("Updated weight\n");
+        }
+        else
+        {
+            s.vec[i].sol = -1;
+        }
+    }
 }
 
 void Dec1(TSol &s, int n) // sort
@@ -294,36 +305,11 @@ void Dec1(TSol &s, int n) // sort
 
     InitSolutionDeliveries(s, n, nodesSize);
 
-    // sort nodes
     sort(s.vec.begin(), s.vec.begin() + nodesSize, sortByRk);
 
     sort(s.vec.begin() + nodesSize + 1, s.vec.end()-1, sortByRk);
 
-    std::vector<int> cache(n - nodesSize - 1, -1);
-    int indexVec = 0;
-
-    LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(nodesSize);
-    segment_tree.build(new int[nodesSize] {});
-
-    for (int i = nodesSize; i < n; i++)
-    {
-        TDelivery delivery = deliveries[s.vec[i].sol];
-
-        //printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, delivery.id, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
-        int origin = searchForNode(delivery.origin, s.vec, indexVec, nodesSize + 1, cache);
-        int destination = searchForNode(delivery.destination, s.vec, indexVec, nodesSize + 1, cache);
-
-        printf("Origin: %d, Destination: %d\n", origin, destination);
-        if ((origin < destination || destination == 0) && withinCapacity(origin, destination, nodesSize, segment_tree))
-        {
-            s.vec[i].rk = 1;
-            updateWeight(origin, destination, nodesSize, 1, segment_tree);
-        }
-        else
-        {
-            s.vec[i].rk = 0;
-        }
-    }
+    SelectDeliveries(s, n, nodesSize);
 
     s.vec[n].sol = -1;
 

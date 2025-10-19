@@ -4,12 +4,13 @@
 
 #ifndef BRKGA_QL_V2_0_LAZYPROPAGATIONSEGMENTTREE_H
 #define BRKGA_QL_V2_0_LAZYPROPAGATIONSEGMENTTREE_H
+#include <vector>
 
 
 class LazyPropagationSegmentTree {
     private:
-        int* t;
-        int* lazy;
+        std::vector<int> t;
+        std::vector<int> lazy;
         int n;
 
         void build(int a[], int index, int start, int end);

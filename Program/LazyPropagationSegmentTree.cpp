@@ -3,11 +3,12 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
+#include <vector>
 
 LazyPropagationSegmentTree::LazyPropagationSegmentTree(int size) {
     n = size;
-    t = new int[n * 4];
-    lazy = new int[n * 4]{};
+    t = std::vector<int>(n * 4 + 1, 0);
+    lazy = std::vector<int>(n * 4 + 1, 0);
 }
 
 void LazyPropagationSegmentTree::build(int a[]) {
@@ -25,11 +26,18 @@ void LazyPropagationSegmentTree::build(int a[], int index, int start, int end) {
     }
 }
 
-void LazyPropagationSegmentTree::push(int index) {
-    t[index*2] += lazy[index];
-    lazy[index*2] += lazy[index];
-    t[index*2+1] += lazy[index];
-    lazy[index*2+1] += lazy[index];
+void LazyPropagationSegmentTree::push(int index)
+{
+    if (index * 2 < n) {
+
+        t[index*2] += lazy[index];
+        lazy[index*2] += lazy[index];
+    }
+    if (index * 2 + 1 < n) {
+
+        t[index*2+1] += lazy[index];
+        lazy[index*2+1] += lazy[index];
+    }
     lazy[index] = 0;
 }
 
