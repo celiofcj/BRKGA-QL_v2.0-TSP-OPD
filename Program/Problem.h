@@ -12,18 +12,8 @@
 
 //------ DEFINITION OF TYPES OF PROBLEM SPECIFIC --------
 
-// struct with node informations
-struct TNode								
-{
-	int id;
-	double x;
-	double y;
-};
-
-
 struct TDelivery
 {
- int id;
  int value;
  int origin;
  int destination;
@@ -31,8 +21,7 @@ struct TDelivery
 
 //------ DEFINITION OF GLOBAL CONSTANTS AND VARIABLES OF SPECIFIC PROBLEM  --------
 
-static std::vector <std::vector <double> > dist;	// matrix with Euclidean distance
-static std::vector <TNode> nodes;					// vector of TSP nodes
+static std::vector <std::vector <int> > dist;	// matrix with Euclidean distance
 static std::vector <TDelivery> deliveries;
 static int capacity;
 

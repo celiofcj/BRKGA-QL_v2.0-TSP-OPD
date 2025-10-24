@@ -84,8 +84,11 @@ int main()
             gettimeofday(&Tend, NULL);
 
             // store the best solution found in MAXRUNS
-            if (bestSolution.ofv < sBest.ofv)
+            if (bestSolution.ofv < sBest.ofv) {
+                printf("\nOld best: %lf ", sBest.ofv);
+                printf("New best: %lf\n", bestSolution.ofv);
                 sBest = bestSolution;
+            }
 
             // calculate best and average results
             if (bestSolution.ofv < foBest)

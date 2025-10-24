@@ -1,11 +1,12 @@
 #include "Problem.h"
 #include "LazyPropagationSegmentTree.h"
- 
+
 // Sort TSol by random-keys
 bool sortByRk(const TVecSol &lhs, const TVecSol &rhs) { return lhs.rk < rhs.rk; }
 
 void ReadData(char nameTable[], int &n)
 {
+    capacity = 10;
     char name[200] = "../Instances/";
     strcat(name,nameTable);
 
@@ -19,72 +20,55 @@ void ReadData(char nameTable[], int &n)
         exit(1);
     }
 
-    // => read data
-
-    // read instance head
-    char temp[100];
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-    if (fgets(temp, sizeof(temp), arq) == NULL) exit(1);
-
-    // read node informations
-    int nAux = 0;
-    nodes.clear();
-    TNode nodeTemp;
-
     char line[256];
-    while (fgets(line, sizeof(line), arq) != NULL)
-    {
-        if (line[0] == '\n' || line[0] == '\r') {
-            break;
-        }
+    int nodesSize = 0, deliveriesSize = 0;
 
-    	if (sscanf(line, "%d %lf %lf", &nodeTemp.id, &nodeTemp.x, &nodeTemp.y) == 0) exit(1);
-    	nodes.push_back(nodeTemp);
+    fgets(line, sizeof(line), arq);
+    sscanf(line,"%d %d",&nodesSize, &deliveriesSize);
 
-    	nAux++;
-    }
+    n = nodesSize + deliveriesSize;
 
-    // calculate the euclidean distance
     dist.clear();
-    dist.resize(nAux, std::vector<double>(nAux));
+    dist.resize(nodesSize, std::vector<int>(nodesSize));
 
-    for (int i=0; i<nAux; i++)
+    for (int i = 0; i < nodesSize; i++)
     {
-    	for (int j=i; j<nAux; j++)
-    	{
-    		dist[i][j] = dist[j][i] = (floor (sqrt( (nodes[j].x - nodes[i].x) * (nodes[j].x - nodes[i].x) +
-    										        (nodes[j].y - nodes[i].y) * (nodes[j].y - nodes[i].y) ) + 0.5 ) )/1.0;
-    	}
+        fgets(line, sizeof(line), arq);
+        char *p = line;
+        int temp = -1;
+        int j = 0;
+        while (sscanf(p, "%d", &temp) == 1) {
+            if (j == nodesSize) break;
+            dist[i][j] = temp;
+            j++;
+
+            while (*p && *p != ' ') p++;
+            p++;
+        }
     }
 
     TDelivery deliveryTemp;
-    while (!feof(arq))
+    for (int i = 0; i < deliveriesSize; i++)
     {
-        if (fscanf(arq, "%d %d %d %d", &deliveryTemp.id, &deliveryTemp.value, &deliveryTemp.origin, &deliveryTemp.destination) == 0) exit(1);
+        fgets(line, sizeof(line), arq);
+        sscanf(line, "%d %d %d", &deliveryTemp.origin, &deliveryTemp.destination, &deliveryTemp.value);
         deliveries.push_back(deliveryTemp);
-
-        nAux++;
     }
-
-    n = nAux;
 
     fclose(arq);
 
-    for (TNode node : nodes) {
-        printf("%d %lf %lf\n", node.id, node.x, node.y);
-    }
-
-    printf("deliveries:\n");
-
-    for (TDelivery delivery : deliveries) {
-        printf("%d %d %d %d\n", delivery.id, delivery.value, delivery.origin, delivery.destination);
-    }
-
-    capacity = 5;
+    // for (std::vector<int> node : dist)
+    // {
+    //     for (int i : node)
+    //     {
+    //         printf("%d ", i);
+    //     }
+    //     printf("\n");
+    // }
+    //
+    // for (TDelivery delivery : deliveries) {
+    //     printf("%d %d %d\n", delivery.origin, delivery.destination, delivery.value);
+    // }
 }
 
 void Decoder(TSol &s, int n, int nDec)
@@ -212,7 +196,8 @@ double CalculateFitness(TSol s, int n, long nodeSize)
 }
 
 void InitSolutionNodes(TSol &s, long size) {
-    for (int i = 0; i < size; i++)
+    s.vec[0].sol = 0;
+    for (int i = 1; i < size; i++)
     {
         s.vec[i].sol = i;
     }
@@ -224,7 +209,7 @@ void InitSolutionDeliveries(TSol &s, int n, long startingIndex) {
     }
 }
 
-int searchForNode(int idNode, std::vector <TVecSol> vec, int &i, int n, std::vector<int> &cache) {
+int searchForNode(int idNode, const std::vector <TVecSol> &vec, int &i, int n, std::vector<int> &cache) {
     if (cache[idNode] != -1) {
         return cache[idNode];
     }
@@ -232,11 +217,9 @@ int searchForNode(int idNode, std::vector <TVecSol> vec, int &i, int n, std::vec
     while (i < n) {
         int nodeIndex = vec[i].sol;
 
-        TNode node = nodes[nodeIndex];
+        cache[nodeIndex] = i;
 
-        cache[node.id] = i;
-
-        if (node.id == idNode)
+        if (nodeIndex == idNode)
             return i;
 
         i++;
@@ -274,17 +257,15 @@ void SelectDeliveries(TSol &s, int n, long nodesSize) {
     {
         TDelivery delivery = deliveries[s.vec[i].sol];
 
-        // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, delivery.id, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
+        // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, s.vec[i].sol, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
         int origin = searchForNode(delivery.origin, s.vec, indexVec, nodesSize + 1, cache);
         int destination = searchForNode(delivery.destination, s.vec, indexVec, nodesSize + 1, cache);
 
         // printf("I: %d, Origin: %d, Destination: %d\n", i, origin, destination);
 
-        if ((origin < destination || (destination == 0 && origin < nodesSize - 1)) && withinCapacity(origin, destination, nodesSize, segment_tree))
+        if ((origin < destination || (destination == 0 && origin <= nodesSize - 1)) && withinCapacity(origin, destination, nodesSize, segment_tree))
         {
-            // printf("Updating weight\n");
             updateWeight(origin, destination, nodesSize, 1, segment_tree);
-            // printf("Updated weight\n");
         }
         else
         {
@@ -299,13 +280,13 @@ void Dec1(TSol &s, int n) // sort
     // -1 is a indicating that the next chromossomes are deliveries
     s.ofv = 0;
 
-    long nodesSize = nodes.size();
+    long nodesSize = dist.size();
 
     InitSolutionNodes(s, nodesSize);
 
     InitSolutionDeliveries(s, n, nodesSize);
 
-    sort(s.vec.begin(), s.vec.begin() + nodesSize, sortByRk);
+    sort(s.vec.begin() + 1, s.vec.begin() + nodesSize, sortByRk);
 
     sort(s.vec.begin() + nodesSize + 1, s.vec.end()-1, sortByRk);
 
@@ -873,7 +854,6 @@ void FreeMemoryProblem()
 {
     //specific problem
     dist.clear();
-    nodes.clear();
     deliveries.clear();
 }
 
