@@ -3,7 +3,7 @@ CCC = g++
 TARGETDIR=.
 CCFLAGS = -O3 -Wall -std=c++11
 ifeq ($(UNAME_S),Linux)
-    CCFLAGS += -fopenmp
+    CCFLAGS += -fopenmp -fsanitize=address
 endif
 ifeq ($(UNAME_S),Darwin)
     CCFLAGS += -openmp
@@ -19,9 +19,13 @@ OBJS2 = \
         $(TARGETDIR)/BRKGA_QL.o \
         $(TARGETDIR)/Problem.o  \
         $(TARGETDIR)/LazyPropagationSegmentTree.o  \
+        $(TARGETDIR)/Searcher.o \
 
 $(TARGETDIR)/runTest: $(OBJS2)
 	$(CCC) $(CCFLAGS) -o $(TARGETDIR)/runTest $(OBJS2)
+
+$(TARGETDIR)/Problem.o: Searcher.h Searcher.cpp
+	$(CCC) $(CCFLAGS) -c Problem.cpp -o $(TARGETDIR)/Searcher.o
 
 $(TARGETDIR)/Problem.o: LazyPropagationSegmentTree.h LazyPropagationSegmentTree.cpp
 	$(CCC) $(CCFLAGS) -c Problem.cpp -o $(TARGETDIR)/LazyPropagationSegmentTree.o
@@ -40,6 +44,7 @@ clean:
 	$(TARGETDIR)/BRKGA_QL.o \
 	$(TARGETDIR)/Problem.o  \
 	$(TARGETDIR)/LazyPropagationSegmentTree.o
+	$(TARGETDIR)/Searcher.o
     
 rebuild:
 	$(MAKE) clean

@@ -1,5 +1,6 @@
 #include "Problem.h"
 #include "LazyPropagationSegmentTree.h"
+#include "Searcher.h"
 
 // Sort TSol by random-keys
 bool sortByRk(const TVecSol &lhs, const TVecSol &rhs) { return lhs.rk < rhs.rk; }
@@ -209,26 +210,6 @@ void InitSolutionDeliveries(TSol &s, int n, long startingIndex) {
     }
 }
 
-int searchForNode(int idNode, const std::vector <TVecSol> &vec, int &i, int n, std::vector<int> &cache) {
-    if (cache[idNode] != -1) {
-        return cache[idNode];
-    }
-
-    while (i < n) {
-        int nodeIndex = vec[i].sol;
-
-        cache[nodeIndex] = i;
-
-        if (nodeIndex == idNode)
-            return i;
-
-        i++;
-    }
-
-    printf("ERROR - SHOULD NEVER REACH THIS POINT!");
-    exit(1);
-}
-
 bool withinCapacity(int origin, int destination, int nodesQtd, LazyPropagationSegmentTree &segment_tree) {
     if (destination == 0)
     {
@@ -247,10 +228,17 @@ void updateWeight(int origin, int destination, int nodesQtd, int addend, LazyPro
     segment_tree.update(origin, destination - 1, addend);
 }
 
-void SelectDeliveries(TSol &s, int n, long nodesSize) {
-    std::vector<int> cache(n - nodesSize - 1, -1);
-    int indexVec = 0;
+Searcher GetSearcher(TSol &s, long nodesSize) {
+    std::vector<int> nodeSols = std::vector<int>(nodesSize);
+    for (int i = 0; i < nodesSize; i++)
+    {
+        nodeSols[i] = s.vec[i].sol;
+    }
 
+    return {nodesSize, nodeSols};
+}
+
+void SelectDeliveries(TSol &s, int n, long nodesSize) {
     LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(nodesSize + 1);
 
     for (int i = nodesSize; i < n; i++)
@@ -258,8 +246,11 @@ void SelectDeliveries(TSol &s, int n, long nodesSize) {
         TDelivery delivery = deliveries[s.vec[i].sol];
 
         // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, s.vec[i].sol, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
-        int origin = searchForNode(delivery.origin, s.vec, indexVec, nodesSize + 1, cache);
-        int destination = searchForNode(delivery.destination, s.vec, indexVec, nodesSize + 1, cache);
+
+        Searcher searcher = GetSearcher(s, nodesSize);
+
+        int origin = searcher.search(delivery.origin);
+        int destination = searcher.search(delivery.destination);
 
         // printf("I: %d, Origin: %d, Destination: %d\n", i, origin, destination);
 
