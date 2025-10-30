@@ -241,14 +241,13 @@ Searcher GetSearcher(TSol &s, long nodesSize) {
 
 void SelectDeliveries(TSol &s, int n, long nodesSize) {
     LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(nodesSize + 1);
+    Searcher searcher = GetSearcher(s, nodesSize);
 
     for (int i = nodesSize; i < n; i++)
     {
         TDelivery delivery = deliveries[s.vec[i].sol];
 
         // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, s.vec[i].sol, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
-
-        Searcher searcher = GetSearcher(s, nodesSize);
 
         int origin = searcher.search(delivery.origin);
         int destination = searcher.search(delivery.destination);
