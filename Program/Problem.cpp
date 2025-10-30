@@ -1,5 +1,6 @@
 #include "Problem.h"
 #include "LazyPropagationSegmentTree.h"
+#include "MCMF.h"
 #include "Searcher.h"
 
 // Sort TSol by random-keys
@@ -116,7 +117,7 @@ void LocalSearch(TSol &s, int n, int nLS)
     // ***** we use a Random Variable Neighborhood Descent (RVND) as local search ****
 
  //    // current neighborhood
-	// int k = 1;
+	int k = 1;
  //
  //    // predefined number of neighborhood moves
  //    std::vector <int> NSL;
@@ -137,11 +138,11 @@ void LocalSearch(TSol &s, int n, int nLS)
  //        int pos = rand() % NSL.size();
  //        k = NSL[pos];
  //
- //        switch (k)
- //        {
- //            case 1:
- //                LS1(s, n);
- //                break;
+ switch (k)
+ {
+     case 1:
+         LS1(s, n);
+         break;
  //
  //            case 2:
  //                LS2(s, n);
@@ -155,9 +156,9 @@ void LocalSearch(TSol &s, int n, int nLS)
  //                LS4(s, n);
  //                break;
  //
- //            default:
- //                break;
- //        }
+     default:
+         break;
+     }
  //
  //        // we better the current solution
  //        if (s.ofv < foCurrent)
@@ -597,68 +598,15 @@ void Dec1(TSol &s, int n) // sort
 //     s.ofv = CalculateFitness(s,n);
 // }
 //
-// void LS1(TSol &s, int n) // 2-Opt
-// {
-//     int t = n, // use a circular list
-//         i = 0,
-//         j = 0,
-//         Mi1= 0,
-//         Mj = 0;
-//
-//     double foOpt = 0;
-//
-//     if (t > 4)
-//     {
-//         for (i=0; i < t; i++)
-//         {
-//             j = i+2;
-//             while (((j+1)%t) != i)
-//             {
-//                 int vi  = s.vec[i].sol;
-//                 int vi1 = s.vec[(i+1)%t].sol;
-//                 int vj  = s.vec[j%t].sol;
-//                 int vj1 = s.vec[(j+1)%t].sol;
-//
-//                 foOpt = - dist[vi][vi1]
-//                         - dist[vj][vj1]
-//                         + dist[vi][vj]
-//                         + dist[vi1][vj1];
-//
-//                 if (foOpt < 0)
-//                 {
-//                     // first improvement strategy
-//                     Mi1 = (i+1)%t;
-//                     Mj  = j%t;
-//
-//                     int inicio = Mi1,
-//                     fim = Mj;
-//
-//                     int tam, p1, p2, aux;
-//
-//                     if(inicio > fim)
-//                         tam = t - inicio + fim + 1;
-//                     else
-//                         tam = fim - inicio + 1;
-//
-//                     p1=inicio;
-//                     p2=fim;
-//
-//                     for(int k=0; k < tam/2; k++)
-//                     {
-//                         aux = s.vec[p1%t].sol;
-//                         s.vec[p1%t].sol = s.vec[p2%t].sol;
-//                         s.vec[p2%t].sol = aux;
-//
-//                         p1 = (p1==t-1)?0:p1+1;
-//                         p2 = (p2 == 0)?t-1:p2-1;
-//                     }
-//                     s.ofv = s.ofv + foOpt;
-//                 }
-//                 j++;
-//             }//while
-//         }//for
-//     }//if t > 4
-// }
+void LS1(TSol &s, int n)
+{
+    MCMF mcmf(n - deliveries.size(), deliveries.size());
+
+    mcmf.build(s, deliveries, capacity);
+
+    std::vector<int> edges(deliveries.size());
+    mcmf.solve(edges);
+}
 //
 // void LS2(TSol &s, int n) // NodeInsertion
 // {
