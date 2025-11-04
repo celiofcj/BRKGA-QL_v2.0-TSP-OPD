@@ -599,12 +599,27 @@ void Dec1(TSol &s, int n) // sort
 //
 void LS1(TSol &s, int n)
 {
-    MCMF mcmf(n - deliveries.size(), deliveries.size());
+    MCMF mcmf(dist.size(), deliveries.size());
 
     mcmf.build(s, deliveries, capacity);
 
-    std::vector<int> edges(deliveries.size());
-    mcmf.solve(edges);
+    int del[deliveries.size()];
+
+    for (int i = 0; i < deliveries.size(); i++) {
+        del[i] = -1;
+    }
+
+    mcmf.solve(del);
+
+    for (int i = 0; i < deliveries.size(); i++) {
+        if (del[i] == 1) {
+            s.vec[i + dist.size()].sol = i;
+        } else {
+            s.vec[i + dist.size()].sol = -1;
+        }
+    }
+
+    s.ofv = CalculateFitness(s, n, dist.size());
 }
 //
 // void LS2(TSol &s, int n) // NodeInsertion
