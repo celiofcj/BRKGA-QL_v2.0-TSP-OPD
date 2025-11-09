@@ -86,9 +86,9 @@ void Decoder(TSol &s, int n, int nDec)
             Dec1(s, n);
             break;
 
-        // case 2:
-        //     Dec2(s, n);
-        //     break;
+        case 2:
+            Dec2(s, n);
+            break;
         //
         // case 3:
         //     Dec3(s, n);
@@ -239,29 +239,33 @@ Searcher GetSearcher(TSol &s, long nodesSize) {
     return {nodesSize, nodeSols};
 }
 
+void VerifyDeliveryConstrains(TSol &s, long nodeSize, LazyPropagationSegmentTree segment_tree, Searcher searcher, int it) {
+    TDelivery delivery = deliveries[s.vec[it].sol];
+
+    // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, s.vec[i].sol, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
+
+    int origin = searcher.search(delivery.origin);
+    int destination = searcher.search(delivery.destination);
+
+    // printf("I: %d, Origin: %d, Destination: %d\n", i, origin, destination);
+
+    if ((origin < destination || (destination == 0 && origin <= nodeSize - 1)) && withinCapacity(origin, destination, nodeSize, segment_tree))
+    {
+        updateWeight(origin, destination, nodeSize, 1, segment_tree);
+    }
+    else
+    {
+        s.vec[it].sol = -1;
+    }
+}
+
 void SelectDeliveries(TSol &s, int n, long nodesSize) {
     LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(nodesSize + 1);
     Searcher searcher = GetSearcher(s, nodesSize);
 
     for (int i = nodesSize; i < n; i++)
     {
-        TDelivery delivery = deliveries[s.vec[i].sol];
-
-        // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, s.vec[i].sol, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
-
-        int origin = searcher.search(delivery.origin);
-        int destination = searcher.search(delivery.destination);
-
-        // printf("I: %d, Origin: %d, Destination: %d\n", i, origin, destination);
-
-        if ((origin < destination || (destination == 0 && origin <= nodesSize - 1)) && withinCapacity(origin, destination, nodesSize, segment_tree))
-        {
-            updateWeight(origin, destination, nodesSize, 1, segment_tree);
-        }
-        else
-        {
-            s.vec[i].sol = -1;
-        }
+        VerifyDeliveryConstrains(s, nodesSize, segment_tree, searcher, i);
     }
 }
 
@@ -288,76 +292,41 @@ void Dec1(TSol &s, int n) // sort
     s.ofv = CalculateFitness(s,n, nodesSize);
 }
 
-// void Dec2(TSol &s, int n) // 2-Opt
-// {
-//     // create a initial solution of the problem
-//     s.ofv = 0;
-//     for (int j = 0; j < n+1; j++)
-// 	{
-//         if (j < n)
-// 		    s.vec[j].sol = j;
-//         else
-//             s.vec[j].sol = -1;
-// 	}
-//
-//     // sort random-key vector
-//     sort(s.vec.begin(), s.vec.end()-1, sortByRk);
-//
-//     int t = 0, i = 0, j = 0, Mi1= 0, Mj = 0;
-//
-//     float foOpt = 0;
-//
-//     t = n; // use a circular list
-//     for (i=0; i < t; i++)
-//     {
-//         j = i + 2;
-//         while (((j+1)%t) != i)
-//         {
-//         int vi  = s.vec[i].sol;
-//         int vi1 = s.vec[(i+1)%t].sol;
-//         int vj  = s.vec[j%t].sol;
-//         int vj1 = s.vec[(j+1)%t].sol;
-//
-//         foOpt = - dist[vi][vi1]
-//                 - dist[vj][vj1]
-//                 + dist[vi][vj]
-//                 + dist[vi1][vj1];
-//
-//         if (foOpt < 0)
-//         {
-//             // first improvement strategy
-//             Mi1 = (i+1)%t;
-//             Mj  = j%t;
-//
-//             int inicio = Mi1,
-//                 fim = Mj;
-//
-//             int tam, p1, p2, aux;
-//
-//             if(inicio > fim)
-//                 tam = t - inicio + fim + 1;
-//             else
-//                 tam = fim - inicio + 1;
-//
-//             p1=inicio;
-//             p2=fim;
-//
-//             for(int k=0; k < tam/2; k++)
-//             {
-//                 aux = s.vec[p1%t].sol;
-//                 s.vec[p1%t].sol = s.vec[p2%t].sol;
-//                 s.vec[p2%t].sol = aux;
-//
-//                 p1 = (p1==t-1)?0:p1+1;
-//                 p2 = (p2 == 0)?t-1:p2-1;
-//             }
-//         }
-//         j++;
-//         }//while
-//     }//for
-//
-//     s.ofv = CalculateFitness(s,n);
-// }
+void SelectDeliveriesBinary(TSol &s, int n, long nodeSize)
+{
+    LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(nodeSize + 1);
+    Searcher searcher = GetSearcher(s, nodeSize);
+
+    int deliverySize = n - nodeSize;
+    int startPosition = floor(s.vec[0].rk * (deliverySize));
+    for (int i = 0; i < deliverySize; i++)
+    {
+        int it = (startPosition + i) % deliverySize + nodeSize;
+        if (s.vec[it].rk <= 0.5) {
+            s.vec[it].sol = -1;
+            continue;
+        }
+
+        VerifyDeliveryConstrains(s, nodeSize, segment_tree, searcher, it);
+    }
+}
+
+void Dec2(TSol &s, int n)
+{
+    s.ofv = 0;
+
+    long nodesSize = dist.size();
+
+    InitSolutionNodes(s, nodesSize);
+
+    InitSolutionDeliveries(s, n, nodesSize);
+
+    sort(s.vec.begin() + 1, s.vec.begin() + nodesSize, sortByRk);
+
+    SelectDeliveriesBinary(s, n, nodesSize);
+
+    s.ofv = CalculateFitness(s,n, nodesSize);
+}
 //
 // void Dec3(TSol &s, int n) // Cheapest Insertion
 // {
