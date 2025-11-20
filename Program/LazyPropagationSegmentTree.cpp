@@ -7,8 +7,9 @@
 
 LazyPropagationSegmentTree::LazyPropagationSegmentTree(int size) {
     n = size;
-    t = std::vector<int>(n * 4 + 1, 0);
-    lazy = std::vector<int>(n * 4 + 1, 0);
+    treeSize = n * 4 + 1;
+    t = std::vector(treeSize, 0);
+    lazy = std::vector(treeSize, 0);
 }
 
 void LazyPropagationSegmentTree::build(int a[]) {
@@ -28,12 +29,12 @@ void LazyPropagationSegmentTree::build(int a[], int index, int start, int end) {
 
 void LazyPropagationSegmentTree::push(int index)
 {
-    if (index * 2 < n) {
+    if (index * 2 < treeSize) {
 
         t[index*2] += lazy[index];
         lazy[index*2] += lazy[index];
     }
-    if (index * 2 + 1 < n) {
+    if (index * 2 + 1 < treeSize) {
 
         t[index*2+1] += lazy[index];
         lazy[index*2+1] += lazy[index];
@@ -50,10 +51,11 @@ void LazyPropagationSegmentTree::update(int index, int start, int end, int left,
     if (right < start || left > end)
         return;
 
-    if (left <= start && end <= right) {
+    if (left <= start && right >= end) {
         t[index] += addend;
         lazy[index] += addend;
-    } else {
+    }
+    else {
         push(index);
         int middle = (start + end) / 2;
         update(index*2, start, middle, left, right, addend);

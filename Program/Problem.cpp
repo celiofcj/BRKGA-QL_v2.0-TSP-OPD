@@ -239,7 +239,7 @@ Searcher GetSearcher(TSol &s, long nodesSize) {
     return {nodesSize, nodeSols};
 }
 
-void VerifyDeliveryConstrains(TSol &s, long nodeSize, LazyPropagationSegmentTree segment_tree, Searcher searcher, int it) {
+void VerifyDeliveryConstrains(TSol &s, long nodeSize, LazyPropagationSegmentTree &segment_tree, Searcher searcher, int it) {
     TDelivery delivery = deliveries[s.vec[it].sol];
 
     // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, s.vec[i].sol, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);

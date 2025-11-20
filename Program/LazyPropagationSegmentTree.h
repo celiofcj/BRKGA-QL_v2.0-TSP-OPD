@@ -12,6 +12,7 @@ class LazyPropagationSegmentTree {
         std::vector<int> t;
         std::vector<int> lazy;
         int n;
+        int treeSize;
 
         void build(int a[], int index, int start, int end);
         int query(int v, int start, int end, int l, int r);
