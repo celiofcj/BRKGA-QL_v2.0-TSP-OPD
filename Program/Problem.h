@@ -53,7 +53,7 @@ void LocalSearch(TSol &s, int n, int nLS);
  Method: CalculateFitness
  Description: calculate the fitness of a chromossom s
 *************************************************************************************/
-double CalculateFitness(TSol s, int n);
+double CalculateFitness(TSol &s, int n, long nodeSize);
 
 /************************************************************************************
  Method: Dec1
@@ -118,3 +118,5 @@ void FreeMemoryProblem();
 #endif
 
 void printSolution(TSol &s, int n);
+
+void sanityCheck(TSol &s);

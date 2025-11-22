@@ -3,6 +3,7 @@
 #include "MCMF.h"
 #include "Searcher.h"
 
+
 // Sort TSol by random-keys
 bool sortByRk(const TVecSol &lhs, const TVecSol &rhs) { return lhs.rk < rhs.rk; }
 
@@ -118,81 +119,74 @@ void LocalSearch(TSol &s, int n, int nLS)
 
  //    // current neighborhood
 	int k = 1;
+    // printf("Local search\n");
  //
- //    // predefined number of neighborhood moves
- //    std::vector <int> NSL;
- //    std::vector <int> NSLAux;
- //
- //    for (int i=1; i<=nLS; i++)
- //    {
- //        NSL.push_back(i);
- //        NSLAux.push_back(i);
- //    }
- //
-	// while (!NSL.empty())
-	// {
- //        // current objective function
- //        double foCurrent = s.ofv;
- //
- //        // randomly choose a neighborhood
- //        int pos = rand() % NSL.size();
- //        k = NSL[pos];
- //
- switch (k)
- {
-     case 1:
-         LS1(s, n);
-         break;
- //
- //            case 2:
- //                LS2(s, n);
- //                break;
- //
- //            case 3:
- //                LS3(s, n);
- //                break;
- //
- //            case 4:
- //                LS4(s, n);
- //                break;
- //
-     default:
-         break;
-     }
- //
- //        // we better the current solution
- //        if (s.ofv < foCurrent)
- //        {
- //            // refresh NSL
- //            NSL.clear();
- //            NSL = NSLAux;
- //        }
- //        else
- //        {
- //            // Remove N(n) from NSL
- //            NSL.erase(NSL.begin()+pos);
- //        }
-	// } //end while
+    // predefined number of neighborhood moves
+    std::vector <int> NSL;
+    std::vector <int> NSLAux;
+
+    for (int i=1; i<=nLS; i++)
+    {
+        NSL.push_back(i);
+        NSLAux.push_back(i);
+    }
+
+	while (!NSL.empty())
+	{
+        // current objective function
+        double foCurrent = s.ofv;
+
+        // randomly choose a neighborhood
+        int pos = rand() % NSL.size();
+        k = NSL[pos];
+
+        switch (k)
+        {
+            case 1:
+             LS1(s, n);
+             break;
+            //
+            //            case 2:
+            //                LS2(s, n);
+            //                break;
+            default:
+             break;
+            }
+
+            // we better the current solution
+            if (s.ofv < foCurrent)
+            {
+                // refresh NSL
+                NSL.clear();
+                NSL = NSLAux;
+            }
+            else
+            {
+                // Remove N(n) from NSL
+                NSL.erase(NSL.begin()+pos);
+            }
+        } //end while
 }
 
-double CalculateFitness(TSol s, int n, long nodeSize)
+double CalculateFitness(TSol &s, int n, long nodeSize)
 {
-    for (int i = 0; i <= n; i++) {
-        // printf("%d: %d - %lf\n", i, s.vec[i].sol, s.vec[i].rk);
-    }
     s.ofv = 0;
+    s.ofvD = 0;
+    s.ofvR = 0;
 
     for (int i=0 ; i < nodeSize; i++)
      {
-        s.ofv += dist[s.vec[i%nodeSize].sol][s.vec[(i+1)%nodeSize].sol];
+        s.ofvR += dist[s.vec[i%nodeSize].sol][s.vec[(i+1)%nodeSize].sol];
      }
 
     for (int i=nodeSize; i < n; i++)
     {
-        if (s.vec[i].sol != -1) {
-            s.ofv -= deliveries[s.vec[i].sol].value;
+        if (s.vec[i].sol >= 0) {
+            s.ofvD += deliveries[s.vec[i].sol].value;
         }
     }
+
+    s.ofv = s.ofvR - s.ofvD;
 
     return s.ofv;
 }
@@ -239,7 +233,7 @@ Searcher GetSearcher(TSol &s, long nodesSize) {
     return {nodesSize, nodeSols};
 }
 
-void VerifyDeliveryConstrains(TSol &s, long nodeSize, LazyPropagationSegmentTree &segment_tree, Searcher searcher, int it) {
+bool VerifyDeliveryConstrains(TSol &s, long routeLength, LazyPropagationSegmentTree &segment_tree, Searcher searcher, int it) {
     TDelivery delivery = deliveries[s.vec[it].sol];
 
     // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, s.vec[i].sol, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
@@ -249,14 +243,33 @@ void VerifyDeliveryConstrains(TSol &s, long nodeSize, LazyPropagationSegmentTree
 
     // printf("I: %d, Origin: %d, Destination: %d\n", i, origin, destination);
 
-    if ((origin < destination || (destination == 0 && origin <= nodeSize - 1)) && withinCapacity(origin, destination, nodeSize, segment_tree))
+    if ((origin < destination || (destination == 0 && origin <= routeLength - 1)) && withinCapacity(origin, destination, routeLength, segment_tree))
     {
-        updateWeight(origin, destination, nodeSize, 1, segment_tree);
+        updateWeight(origin, destination, routeLength, 1, segment_tree);
+        return true;
     }
-    else
+
+    return false;
+}
+
+bool VerifyDeliveryConstrainsRaw(int routeLength, std::vector<int> &del, LazyPropagationSegmentTree &segment_tree, Searcher &searcher, int &it) {
+    TDelivery delivery = deliveries[del[it]];
+
+    // printf("Delivery %ld: id: %d - pos: %d - value: %d - origin: %d - destination: %d\n", i-nodesSize, s.vec[i].sol, s.vec[i].sol, delivery.value, delivery.origin, delivery.destination);
+
+    int origin = searcher.search(delivery.origin);
+    int destination = searcher.search(delivery.destination);
+
+    // printf("I: %d, Origin: %d, Destination: %d\n", i, origin, destination);
+
+    if ((origin < destination || (destination == 0 && origin <= routeLength - 1)) && withinCapacity(origin, destination, routeLength, segment_tree))
     {
-        s.vec[it].sol = -1;
+        updateWeight(origin, destination, routeLength, 1, segment_tree);
+        return true;
+
     }
+
+    return false;
 }
 
 void SelectDeliveries(TSol &s, int n, long nodesSize) {
@@ -265,16 +278,29 @@ void SelectDeliveries(TSol &s, int n, long nodesSize) {
 
     for (int i = nodesSize; i < n; i++)
     {
-        VerifyDeliveryConstrains(s, nodesSize, segment_tree, searcher, i);
+        if (!VerifyDeliveryConstrains(s, nodesSize, segment_tree, searcher, i)) {
+            s.vec[i].sol = s.vec[i].sol;
+        }
     }
+}
+
+int EvaluateDeliveries(TSol &s, int n, long routeLength, std::vector<int> del) {
+    LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(routeLength + 1);
+    Searcher searcher = GetSearcher(s, routeLength);
+
+    int sum = 0;
+    for (int i = 0; i < del.size(); i++)
+    {
+        if (VerifyDeliveryConstrainsRaw(routeLength, del, segment_tree, searcher, i)) {
+            sum += deliveries[s.vec[routeLength + i].sol].value;
+        }
+    }
+
+    return sum;
 }
 
 void Dec1(TSol &s, int n) // sort
 {
-    // create a initial solution of the problem
-    // -1 is a indicating that the next chromossomes are deliveries
-    s.ofv = 0;
-
     long nodesSize = dist.size();
 
     InitSolutionNodes(s, nodesSize);
@@ -289,7 +315,7 @@ void Dec1(TSol &s, int n) // sort
 
     s.vec[n].sol = -1;
 
-    s.ofv = CalculateFitness(s,n, nodesSize);
+    CalculateFitness(s,n, nodesSize);
 }
 
 void SelectDeliveriesBinary(TSol &s, int n, long nodeSize)
@@ -303,7 +329,7 @@ void SelectDeliveriesBinary(TSol &s, int n, long nodeSize)
     {
         int it = (startPosition + i) % deliverySize + nodeSize;
         if (s.vec[it].rk <= 0.5) {
-            s.vec[it].sol = -1;
+            s.vec[it].sol = s.vec[it].sol;
             continue;
         }
 
@@ -313,8 +339,6 @@ void SelectDeliveriesBinary(TSol &s, int n, long nodeSize)
 
 void Dec2(TSol &s, int n)
 {
-    s.ofv = 0;
-
     long nodesSize = dist.size();
 
     InitSolutionNodes(s, nodesSize);
@@ -325,249 +349,10 @@ void Dec2(TSol &s, int n)
 
     SelectDeliveriesBinary(s, n, nodesSize);
 
-    s.ofv = CalculateFitness(s,n, nodesSize);
+    CalculateFitness(s,n, nodesSize);
 }
-//
-// void Dec3(TSol &s, int n) // Cheapest Insertion
-// {
-//     // create a initial solution of the problem
-//     s.ofv = 0;
-//     for (int j = 0; j < n+1; j++)
-// 	{
-//         if (j < n)
-// 		    s.vec[j].sol = j;
-//         else
-//             s.vec[j].sol = -1;
-// 	}
-//
-//     // sort random-key vector
-//     sort(s.vec.begin(), s.vec.end()-1, sortByRk);
-//
-//     TVecSol aux = s.vec[n];
-//
-//     // order list of candidates
-//     TSol sC = s;
-//
-//     // partial route with three points
-//     s.vec.resize(3);
-//
-//     // construct a solution with cheapest insertion
-//     for (int i = 3; i<n; i++)
-//     {
-//         // find the cheapest position to insert the i-th point of sC
-//         int bestPosition = 0;
-//         float costBest = INFINITO;
-//         float costInsertion = 0;
-//         for (unsigned int j = 0; j<s.vec.size(); j++)
-//         {
-//             if (j == s.vec.size()-1)
-//             {
-//                 // cost to insert between i-1 and 0
-//                 costInsertion = dist[s.vec[j].sol][sC.vec[i].sol] + dist[sC.vec[i].sol][s.vec[0].sol] - dist[s.vec[j].sol][s.vec[0].sol];
-//                 if (costInsertion < costBest)
-//                 {
-//                     costBest = costInsertion;
-//                     bestPosition = j;
-//                 }
-//             }
-//             else
-//             {
-//                 // cost to insert between i and i+1
-//                 costInsertion = dist[s.vec[j].sol][sC.vec[i].sol] + dist[sC.vec[i].sol][s.vec[j+1].sol] - dist[s.vec[j].sol][s.vec[j+1].sol];
-//                 if (costInsertion < costBest)
-//                 {
-//                     costBest = costInsertion;
-//                     bestPosition = j;
-//                 }
-//             }
-//         }
-//
-//         // insert the i-th point in the cheapest position
-//         s.vec.insert(s.vec.begin()+bestPosition+1,sC.vec[i]);
-//     }
-//
-//     // last RK
-//     s.vec.push_back(aux);
-//
-//     s.ofv = CalculateFitness(s,n);
-// }
-//
-// void Dec4(TSol &s, int n) // k-Farthest Insertion
-// {
-//     // create a initial solution of the problem
-//     s.ofv = 0;
-//     for (int j = 0; j < n+1; j++)
-// 	{
-//         if (j < n)
-// 		    s.vec[j].sol = j;
-//         else
-//             s.vec[j].sol = -1;
-// 	}
-//
-//     // sort random-key vector
-//     sort(s.vec.begin(), s.vec.end()-1, sortByRk);
-//
-//     // order list of candidates
-//     std::vector <TVecSol> sC = s.vec;
-//     sC.erase(sC.begin()+n); // apagar ultima chave de sC
-//     TVecSol aux = s.vec[n]; // copiar ultima chave de rk
-//
-//     //TSol temp = s;
-//
-//     // partial route with one point
-//     s.vec.clear();
-//     s.vec.push_back(sC[0]);
-//     sC.erase(sC.begin());
-//
-//     // construct a solution with k farthest insertion
-//     while (!sC.empty())
-//     {
-//         // find the point i farthest from the partial route into the k first points of sC
-//         int i = 0;
-//         double costFarthest = -INFINITO;
-//
-//         for (unsigned int k=0; k<3 && k<sC.size(); k++)
-//         {
-//             for (unsigned int j = 0; j<s.vec.size(); j++)
-//             {
-//                 if (dist[s.vec[j].sol][sC[k].sol] > costFarthest)
-//                 {
-//                     costFarthest = dist[s.vec[j].sol][sC[k].sol];
-//                     i = k;
-//                 }
-//             }
-//         }
-//
-//         // find the cheapest position to insert the point i into the partial route
-//         int bestPosition = 0;
-//         float costBest = INFINITO;
-//         float costInsertion = 0;
-//         for (unsigned int j = 0; j<s.vec.size(); j++)
-//         {
-//             if (j == s.vec.size()-1)
-//             {
-//                 // cost to insert between n-1 and 0
-//                 costInsertion = dist[s.vec[j].sol][sC[i].sol] + dist[sC[i].sol][s.vec[0].sol] - dist[s.vec[j].sol][s.vec[0].sol];
-//                 if (costInsertion < costBest)
-//                 {
-//                     costBest = costInsertion;
-//                     bestPosition = j;
-//                 }
-//             }
-//             else
-//             {
-//                 // cost to insert between j and j+1
-//                 costInsertion = dist[s.vec[j].sol][sC[i].sol] + dist[sC[i].sol][s.vec[j+1].sol] - dist[s.vec[j].sol][s.vec[j+1].sol];
-//                 if (costInsertion < costBest)
-//                 {
-//                     costBest = costInsertion;
-//                     bestPosition = j;
-//                 }
-//             }
-//         }
-//
-//         // insert the i-th point in the cheapest position
-//         s.vec.insert(s.vec.begin()+bestPosition+1,sC[i]); //
-//
-//         // erase the i-th point of the sC list
-//         sC.erase(sC.begin()+i);
-//     }
-//
-//     // last random-key
-//     s.vec.push_back(aux);
-//
-//     s.ofv = CalculateFitness(s,n);
-// }
-//
-// void Dec5(TSol &s, int n) // k-Nearest Insertion
-// {
-//     // create a initial solution of the problem
-//     s.ofv = 0;
-//     for (int j = 0; j < n+1; j++)
-// 	{
-//         if (j < n)
-// 		    s.vec[j].sol = j;
-//         else
-//             s.vec[j].sol = -1;
-// 	}
-//
-//     // sort random-key vector
-//     sort(s.vec.begin(), s.vec.end()-1, sortByRk);
-//
-//     // order list of candidates
-//     std::vector <TVecSol> sC = s.vec;
-//     sC.erase(sC.begin()+n); // apagar ultima chave de sC
-//     TVecSol aux = s.vec[n]; // copiar ultima chave de rk
-//
-//     //TSol temp = s;
-//
-//     // partial route with one point
-//     s.vec.clear();
-//     s.vec.push_back(sC[0]);
-//     sC.erase(sC.begin());
-//
-//     // construct a solution with k farthest insertion
-//     while (!sC.empty())
-//     {
-//         // find the point i nearest from the partial route into the k first points of sC
-//         int i = 0;
-//         double costNearest = INFINITO;
-//
-//         for (unsigned int k=0; k<3 && k<sC.size(); k++)
-//         {
-//             for (unsigned int j = 0; j<s.vec.size(); j++)
-//             {
-//                 if (dist[s.vec[j].sol][sC[k].sol] < costNearest)
-//                 {
-//                     costNearest = dist[s.vec[j].sol][sC[k].sol];
-//                     i = k;
-//                 }
-//             }
-//         }
-//
-//         // find the cheapest position to insert the point i into the partial route
-//         int bestPosition = 0;
-//         float costBest = INFINITO;
-//         float costInsertion = 0;
-//         for (unsigned int j = 0; j<s.vec.size(); j++)
-//         {
-//             if (j == s.vec.size()-1)
-//             {
-//                 // cost to insert between n-1 and 0
-//                 costInsertion = dist[s.vec[j].sol][sC[i].sol] + dist[sC[i].sol][s.vec[0].sol] - dist[s.vec[j].sol][s.vec[0].sol];
-//                 if (costInsertion < costBest)
-//                 {
-//                     costBest = costInsertion;
-//                     bestPosition = j;
-//                 }
-//             }
-//             else
-//             {
-//                 // cost to insert between j and j+1
-//                 costInsertion = dist[s.vec[j].sol][sC[i].sol] + dist[sC[i].sol][s.vec[j+1].sol] - dist[s.vec[j].sol][s.vec[j+1].sol];
-//                 if (costInsertion < costBest)
-//                 {
-//                     costBest = costInsertion;
-//                     bestPosition = j;
-//                 }
-//             }
-//         }
-//
-//         // insert the i-th point in the cheapest position
-//         s.vec.insert(s.vec.begin()+bestPosition+1,sC[i]); //
-//
-//         // erase the i-th point of the sC list
-//         sC.erase(sC.begin()+i);
-//     }
-//
-//     // last random-key
-//     s.vec.push_back(aux);
-//
-//     s.ofv = CalculateFitness(s,n);
-// }
-//
-void LS1(TSol &s, int n)
-{
+
+void OptimumDeliveries(TSol &s) {
     MCMF mcmf(dist.size(), deliveries.size());
 
     mcmf.build(s, deliveries, capacity);
@@ -587,10 +372,75 @@ void LS1(TSol &s, int n)
             s.vec[i + dist.size()].sol = -1;
         }
     }
-
-    s.ofv = CalculateFitness(s, n, dist.size());
 }
+
+// TSol do_work(TSol s, int n, int t, int &i, int &j) {
 //
+//     int Mi1 = (i+1)%t;
+//     int Mj  = j%t;
+//
+//     int inicio = Mi1,
+//             fim = Mj;
+//
+//     int tam, p1, p2;
+//
+//     if(inicio > fim)
+//         tam = t - inicio + fim + 1;
+//     else
+//         tam = fim - inicio + 1;
+//
+//     p1=inicio;
+//     p2=fim;
+//
+//     for(int k=0; k < tam/2; k++)
+//     {
+//         const int aux = s.vec[p1%t].sol;
+//         s.vec[p1%t].sol = s.vec[p2%t].sol;
+//         s.vec[p2%t].sol = aux;
+//
+//         p1 = p1 == t - 1 ? 0 : p1 + 1;
+//         p2 = p2 == 0 ? t - 1 : p2 - 1;
+//     }
+//
+//     InitSolutionDeliveries(s, n, t);
+//     sort(s.vec.begin() + t + 1, s.vec.end()-1, sortByRk);
+//     SelectDeliveries(s, n, t);
+//
+//     return TSol(s);
+// }
+
+// void LS1(TSol &s, int n) {
+     // {
+     //     int t = dist.size(), // use a circular list
+     //         i = 0,
+     //         j = 0;
+     //
+     //     bool improved = false;
+     //     TSol bestOpt = s;
+     //     for (i=1; i < t - 2; i++)
+     //     {
+     //         j = i+2;
+     //         while ((j + 1) % t != i)
+     //         {
+     //             TSol newSol = do_work(s, n, t, i, j);
+     //
+     //             newSol.ofv = CalculateFitness(newSol, n, t);
+     //
+     //             if (newSol.ofv < bestOpt.ofv) {
+     //                 bestOpt = newSol;
+     //                 improved = true;
+     //             }
+     //             j++;
+     //         }
+     //
+     //         if (i == t - 1 && improved) {
+     //             // printf("IMPROVED! OLD:  %f - NEW %f\n", s.ofv, bestOpt.ofv);
+     //             s.vec = bestOpt.vec;
+     //             s.ofv = bestOpt.ofv;
+     //         }
+     //     }//for
+     // }
+// }
 // void LS2(TSol &s, int n) // NodeInsertion
 // {
 //     int i = 0,
@@ -642,63 +492,109 @@ void LS1(TSol &s, int n)
 //         }
 //     }
 // }
-//
-// void LS3(TSol &s, int n) // NodeExchange
-// {
-//     int i = 0,
-//         j = 0;
-//
-//     double foOpt;
-//
-//     for (i=0; i < n-1; i++)
-//     {
-//         j = i+2;
-//         while (j < n)
-//         {
-//             if (i != 0 && j != n-1) //no exchange edge of the tour
-//             {
-//                 int vi  = s.vec[i].sol;
-//                 int viP = s.vec[i+1].sol;
-//                 int viM = 0;
-//                 if (i == 0)
-//                     viM = s.vec[n-1].sol;
-//                 else
-//                     viM = s.vec[i-1].sol;
-//
-//                 int vj  = s.vec[j].sol;
-//                 int vjM = s.vec[j-1].sol;
-//                 int vjP = 0;
-//                 if (j < n-1)
-//                     vjP = s.vec[j+1].sol;
-//                 else
-//                     vjP = s.vec[0].sol;
-//
-//                 foOpt = - dist[viM][vi]
-//                         - dist[vi][viP]
-//                         - dist[vjM][vj]
-//                         - dist[vj][vjP]
-//                         + dist[viM][vj]
-//                         + dist[vj][viP]
-//                         + dist[vjM][vi]
-//                         + dist[vi][vjP];
-//
-//                 if (foOpt < 0)
-//                 {
-//                     // first improvement strategy
-//                     TVecSol aux;
-//
-//                     // exchange i and j
-//                     aux = s.vec[i];
-//                     s.vec[i] = s.vec[j];
-//                     s.vec[j] = aux;
-//
-//                     s.ofv = s.ofv + foOpt;
-//                 }
-//             }
-//             j++;
-//         }
-//     }
-// }
+
+bool sortByIncreasingValue(const TDelivery &lhs, const TDelivery &rhs) { return lhs.value > rhs.value; }
+
+std::vector<int> ObtainSortedDeliveries(TSol &s, int n, int routeLength) {
+    int deliverySize = n - routeLength;
+
+    std::vector<int> newVector(deliverySize);
+    for (int i = 0; i < deliverySize; i++) {
+        int index = s.vec[routeLength + i].sol;
+
+        if (index < 0) {
+            index *= -1;
+        }
+
+        newVector[i] = index;
+    }
+
+    sort(newVector.begin(), newVector.end());
+
+    return newVector;
+}
+
+void SwitchNodes(TSol &s, const int &i, const int &j) {
+    TVecSol aux = s.vec[i];
+
+    s.vec[i] = s.vec[j];
+    s.vec[j] = aux;
+}
+
+void LS1(TSol &s, int n) // NodeExchange
+{
+    int bestI = -1, bestJ = -1;
+    std::vector<int> bestDeliveries(deliveries.size());
+    double bestFoOptD, bestFoOptR, bestFoOpt;
+
+    double foOptD, foOptR, foOpt;
+
+    int routeLength = dist.size();
+
+    for (int i = 1; i < routeLength - 1; i++)
+    {
+        for (int j = i + 2; j < routeLength; j++)
+        {
+            if (j != routeLength - 1) //no exchange edge of the tour
+            {
+                int vi = s.vec[i].sol;
+                int viP = s.vec[i+1].sol;
+                int viM = s.vec[i-1].sol;
+
+                int vj = s.vec[j].sol;
+                int vjM = s.vec[j-1].sol;
+                int vjP = 0;
+                if (j < routeLength - 1)
+                    vjP = s.vec[j+1].sol;
+                else
+                    vjP = s.vec[0].sol;
+
+                foOptD = - dist[viM][vi]
+                        - dist[vi][viP]
+                        - dist[vjM][vj]
+                        - dist[vj][vjP]
+                        + dist[viM][vj]
+                        + dist[vj][viP]
+                        + dist[vjM][vi]
+                        + dist[vi][vjP];
+
+                // first improvement strategy
+                SwitchNodes(s, i, j);
+
+                std::vector<int> sortedDeliveries = ObtainSortedDeliveries(s, n, routeLength);
+
+                foOptR = s.ofvD - EvaluateDeliveries(s, n, routeLength, sortedDeliveries);
+
+                foOpt = foOptD + foOptR;
+
+                if (foOpt < s.ofv) {
+                    bestFoOpt= foOpt;
+                    bestFoOptR = foOptR;
+                    bestFoOptD = foOptD;
+                    bestI = i;
+                    bestJ = j;
+                    bestDeliveries = sortedDeliveries;
+                }
+
+                SwitchNodes(s, i, j);
+            }
+        }
+    }
+
+    if (bestI != -1 && bestJ != -1) {
+        int deliveriesSize = deliveries.size();
+        int routeLength = n - deliveriesSize;
+
+        SwitchNodes(s, bestI, bestJ);
+        for (int i = 0; i < deliveriesSize; i++) {
+            s.vec[i + routeLength].sol = bestDeliveries[i];
+        }
+
+        s.ofv = bestFoOpt;
+        s.ofvR = bestFoOptR;
+        s.ofvD = bestFoOptD;
+    }
+}
 //
 // void LS4(TSol &s, int n) // OrOpt2
 // {
@@ -783,5 +679,36 @@ void printSolution(TSol &s, int n)
 {
     for (int i = 0; i < n; i++) {
         printf("%d, %d, %lf\n", i, s.vec[i].sol, s.vec[i].rk);
+    }
+}
+
+void sanityCheck(TSol &s) {
+    int nodeSize = dist.size();
+    int deliverySize = deliveries.size();
+
+    double fitness = CalculateFitness(s, nodeSize + deliverySize , nodeSize);
+
+    if (fitness != s.ofv) {
+        printf("\nERRO SANITY CHECK 1\n");
+        exit(1);
+    }
+
+    TSol before(s);
+    InitSolutionDeliveries(s, nodeSize, nodeSize + deliverySize);
+    OptimumDeliveries(s);
+
+    fitness = CalculateFitness(s, nodeSize + deliverySize, nodeSize);
+
+    if (fitness > s.ofv) {
+        printf("\nERRO SANITY CHECK 2\n");
+        printf("Fitness: %f - Ofv %f\n", fitness, s.ofv);
+        for (int i = 0; i < nodeSize + deliverySize; i++) {
+            printf("%d ", s.vec[i].sol);
+        }
+        printf("\n");
+        for (int i = 0; i < nodeSize + deliverySize; i++) {
+            printf("%d ", before.vec[i].sol);
+        }
+        exit(1);
     }
 }

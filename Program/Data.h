@@ -24,6 +24,8 @@ struct TSol
 {
     std::vector <TVecSol> vec;              // solution of the problem and random key
     double ofv;                             // objetive function value
+    double ofvR;
+    double ofvD;
     int label;                              // defines a community solution with a number
     int similar;                            // indicates if a solution is similar to other (0 no, 1 yes)
     int flag;                               // indicates if a local search has already been performed on this solution (0 no, 1 yes)
