@@ -89,7 +89,7 @@ void Dec5(TSol &s, int n);
  Method: LS1
  Description: 2-Opt
 *************************************************************************************/
-void LS1(TSol &s, int n);
+void LS1(TSol &s, int n, std::vector<int> &sortedDeliveriesByValue);
 
 /************************************************************************************
  Method: LS2
@@ -119,4 +119,4 @@ void FreeMemoryProblem();
 
 void printSolution(TSol &s, int n);
 
-void sanityCheck(TSol &s);
+void sanityCheck(TSol s);

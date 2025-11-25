@@ -1,4 +1,7 @@
 #include "Problem.h"
+
+#include <map>
+
 #include "LazyPropagationSegmentTree.h"
 #include "MCMF.h"
 #include "Searcher.h"
@@ -113,15 +116,50 @@ void Decoder(TSol &s, int n, int nDec)
     }
 }
 
+
+bool sortByIncreasingValue(const std::pair<int, TDelivery>& a, const std::pair<int, TDelivery>& b) {
+    return a.second.value > b.second.value;
+}
+
+std::vector<int> ObtainSortedDeliveries(TSol &s, int n, int routeLength) {
+    int deliverySize = n - routeLength;
+
+    std::map<int, TDelivery> map;
+    std::vector<int> newVector(deliverySize);
+
+    for (int i = 0; i < deliverySize; i++) {
+        int index = s.vec[routeLength + i].sol;
+
+        if (index < 0) {
+            index = -(index + 1);
+        }
+
+
+        map[index] = deliveries[index];
+    }
+
+    std::vector<std::pair<int, TDelivery>> vec(map.begin(), map.end());
+
+    sort(vec.begin(), vec.end(), sortByIncreasingValue);
+
+    int i = 0;
+    for (const auto& pair : vec) {
+        newVector[i] = pair.first;
+        i++;
+    }
+
+    return newVector;
+}
+
+
 void LocalSearch(TSol &s, int n, int nLS)
 {
     // ***** we use a Random Variable Neighborhood Descent (RVND) as local search ****
 
- //    // current neighborhood
+    int routeLength = dist.size();
+    std::vector<int> sortedDeliveriesByValue = ObtainSortedDeliveries(s, n, routeLength);
+
 	int k = 1;
-    // printf("Local search\n");
- //
-    // predefined number of neighborhood moves
     std::vector <int> NSL;
     std::vector <int> NSLAux;
 
@@ -143,7 +181,7 @@ void LocalSearch(TSol &s, int n, int nLS)
         switch (k)
         {
             case 1:
-             LS1(s, n);
+             LS1(s, n, sortedDeliveriesByValue);
              break;
             //
             //            case 2:
@@ -279,12 +317,12 @@ void SelectDeliveries(TSol &s, int n, long nodesSize) {
     for (int i = nodesSize; i < n; i++)
     {
         if (!VerifyDeliveryConstrains(s, nodesSize, segment_tree, searcher, i)) {
-            s.vec[i].sol = s.vec[i].sol;
+            s.vec[i].sol = -s.vec[i].sol - 1;
         }
     }
 }
 
-int EvaluateDeliveries(TSol &s, int n, long routeLength, std::vector<int> del) {
+int EvaluateDeliveries(TSol &s, long routeLength, std::vector<int> del) {
     LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(routeLength + 1);
     Searcher searcher = GetSearcher(s, routeLength);
 
@@ -292,7 +330,7 @@ int EvaluateDeliveries(TSol &s, int n, long routeLength, std::vector<int> del) {
     for (int i = 0; i < del.size(); i++)
     {
         if (VerifyDeliveryConstrainsRaw(routeLength, del, segment_tree, searcher, i)) {
-            sum += deliveries[s.vec[routeLength + i].sol].value;
+            sum += deliveries[del[i]].value;
         }
     }
 
@@ -328,14 +366,23 @@ void SelectDeliveriesBinary(TSol &s, int n, long nodeSize)
     for (int i = 0; i < deliverySize; i++)
     {
         int it = (startPosition + i) % deliverySize + nodeSize;
-        if (s.vec[it].rk <= 0.5) {
-            s.vec[it].sol = s.vec[it].sol;
-            continue;
+        if (s.vec[it].rk <= 0.5 || !VerifyDeliveryConstrains(s, nodeSize, segment_tree, searcher, it)) {
+            s.vec[it].sol = -s.vec[it].sol - 1;
         }
-
-        VerifyDeliveryConstrains(s, nodeSize, segment_tree, searcher, it);
     }
 }
+
+// void SelectDeliveries(TSol &s, int n, long nodesSize) {
+//     LazyPropagationSegmentTree segment_tree = LazyPropagationSegmentTree(nodesSize + 1);
+//     Searcher searcher = GetSearcher(s, nodesSize);
+//
+//     for (int i = nodesSize; i < n; i++)
+//     {
+//         if (!VerifyDeliveryConstrains(s, nodesSize, segment_tree, searcher, i)) {
+//             s.vec[i].sol = -s.vec[i].sol - 1;
+//         }
+//     }
+// }
 
 void Dec2(TSol &s, int n)
 {
@@ -493,27 +540,6 @@ void OptimumDeliveries(TSol &s) {
 //     }
 // }
 
-bool sortByIncreasingValue(const TDelivery &lhs, const TDelivery &rhs) { return lhs.value > rhs.value; }
-
-std::vector<int> ObtainSortedDeliveries(TSol &s, int n, int routeLength) {
-    int deliverySize = n - routeLength;
-
-    std::vector<int> newVector(deliverySize);
-    for (int i = 0; i < deliverySize; i++) {
-        int index = s.vec[routeLength + i].sol;
-
-        if (index < 0) {
-            index *= -1;
-        }
-
-        newVector[i] = index;
-    }
-
-    sort(newVector.begin(), newVector.end());
-
-    return newVector;
-}
-
 void SwitchNodes(TSol &s, const int &i, const int &j) {
     TVecSol aux = s.vec[i];
 
@@ -521,13 +547,10 @@ void SwitchNodes(TSol &s, const int &i, const int &j) {
     s.vec[j] = aux;
 }
 
-void LS1(TSol &s, int n) // NodeExchange
+void LS1(TSol &s, int n, std::vector<int> &sortedDeliveriesByValue) // NodeExchange
 {
     int bestI = -1, bestJ = -1;
-    std::vector<int> bestDeliveries(deliveries.size());
-    double bestFoOptD, bestFoOptR, bestFoOpt;
-
-    double foOptD, foOptR, foOpt;
+    double bestFoOptD = 0, bestFoOptR = 0, bestFoOpt = 0;
 
     int routeLength = dist.size();
 
@@ -549,50 +572,55 @@ void LS1(TSol &s, int n) // NodeExchange
                 else
                     vjP = s.vec[0].sol;
 
-                foOptD = - dist[viM][vi]
-                        - dist[vi][viP]
-                        - dist[vjM][vj]
-                        - dist[vj][vjP]
-                        + dist[viM][vj]
-                        + dist[vj][viP]
-                        + dist[vjM][vi]
-                        + dist[vi][vjP];
+                double foOptR = - dist[viM][vi]
+                                - dist[vi][viP]
+                                - dist[vjM][vj]
+                                - dist[vj][vjP]
+                                + dist[viM][vj]
+                                + dist[vj][viP]
+                                + dist[vjM][vi]
+                                + dist[vi][vjP];
 
-                // first improvement strategy
                 SwitchNodes(s, i, j);
 
-                std::vector<int> sortedDeliveries = ObtainSortedDeliveries(s, n, routeLength);
+                double foOptD = s.ofvD - EvaluateDeliveries(s, routeLength, sortedDeliveriesByValue);
 
-                foOptR = s.ofvD - EvaluateDeliveries(s, n, routeLength, sortedDeliveries);
+                SwitchNodes(s, i, j);
 
-                foOpt = foOptD + foOptR;
+                double foOpt = foOptR + foOptD;
 
-                if (foOpt < s.ofv) {
-                    bestFoOpt= foOpt;
+                if (foOpt < bestFoOpt) {
+                    bestFoOpt = foOpt;
                     bestFoOptR = foOptR;
                     bestFoOptD = foOptD;
                     bestI = i;
                     bestJ = j;
-                    bestDeliveries = sortedDeliveries;
                 }
-
-                SwitchNodes(s, i, j);
             }
         }
     }
 
-    if (bestI != -1 && bestJ != -1) {
-        int deliveriesSize = deliveries.size();
-        int routeLength = n - deliveriesSize;
+    double ofv = s.ofv + bestFoOpt;
 
+    if (bestI != -1 && bestJ != -1 && ofv < s.ofv)
+    {
         SwitchNodes(s, bestI, bestJ);
-        for (int i = 0; i < deliveriesSize; i++) {
-            s.vec[i + routeLength].sol = bestDeliveries[i];
+
+        int deliveriesSize = deliveries.size();
+        for (int i = 0; i < deliveriesSize; i++)
+        {
+            s.vec[i + routeLength].sol = sortedDeliveriesByValue[i];
+
+            if (sortedDeliveriesByValue[i] < 0) {
+                printf("ERRRO\n");
+            }
         }
 
-        s.ofv = bestFoOpt;
-        s.ofvR = bestFoOptR;
-        s.ofvD = bestFoOptD;
+        s.ofv = ofv;
+        s.ofvR += bestFoOptR;
+        s.ofvD -= bestFoOptD;
+
+        // sanityCheck(s);
     }
 }
 //
@@ -682,13 +710,31 @@ void printSolution(TSol &s, int n)
     }
 }
 
-void sanityCheck(TSol &s) {
+void sanityCheck(TSol s) {
     int nodeSize = dist.size();
     int deliverySize = deliveries.size();
 
-    double fitness = CalculateFitness(s, nodeSize + deliverySize , nodeSize);
+    double ofv = s.ofv;
+    double ofvR = s.ofvR;
+    double ofvD = s.ofvD;
 
-    if (fitness != s.ofv) {
+    int copy[nodeSize + deliverySize];
+
+    bool negative = false;
+    for (int i = 0; i < nodeSize + deliverySize; i++) {
+        copy[i] = s.vec[i].sol;
+
+        if (s.vec[i].sol < 0) {
+            negative = true;
+        }
+    }
+
+    if (!negative) {
+        SelectDeliveries(s, deliverySize + nodeSize, nodeSize);
+    }
+    CalculateFitness(s, nodeSize + deliverySize , nodeSize);
+
+    if (s.ofv != ofv || s.ofvR != ofvR || s.ofvD != ofvD) {
         printf("\nERRO SANITY CHECK 1\n");
         exit(1);
     }
@@ -697,7 +743,7 @@ void sanityCheck(TSol &s) {
     InitSolutionDeliveries(s, nodeSize, nodeSize + deliverySize);
     OptimumDeliveries(s);
 
-    fitness = CalculateFitness(s, nodeSize + deliverySize, nodeSize);
+    auto fitness = CalculateFitness(s, nodeSize + deliverySize, nodeSize);
 
     if (fitness > s.ofv) {
         printf("\nERRO SANITY CHECK 2\n");
