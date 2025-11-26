@@ -87,7 +87,7 @@ void Dec5(TSol &s, int n);
 
 /************************************************************************************
  Method: LS1
- Description: 2-Opt
+ Description: NodeExchange
 *************************************************************************************/
 void LS1(TSol &s, int n, std::vector<int> &sortedDeliveriesByValue);
 
@@ -95,7 +95,7 @@ void LS1(TSol &s, int n, std::vector<int> &sortedDeliveriesByValue);
  Method: LS2
  Description: NodeInsertion
 *************************************************************************************/
-void LS2(TSol &s, int n);
+void LS2(TSol &s, int n, std::vector<int> &sortedDeliveriesByValue);
 
 /************************************************************************************
  Method: LS3
