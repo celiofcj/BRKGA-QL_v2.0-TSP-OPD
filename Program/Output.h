@@ -77,14 +77,14 @@ void WriteResults(double ofv, double ofvAverage, std::vector <double> ofvs, floa
 	}
 
 	fprintf(arq,"\n%s", instance);
-    fprintf(arq,"\t%d", (int)ofvs.size());
+    fprintf(arq,",%d", (int)ofvs.size());
     for (unsigned int i=0; i<ofvs.size(); i++){
-        fprintf(arq,"\t%lf", ofvs[i]);
+        fprintf(arq,",%lf", ofvs[i]);
 	}
-	fprintf(arq,"\t%lf", ofv);
-	fprintf(arq,"\t%lf", ofvAverage);
-	fprintf(arq,"\t%.3f", timeBest);
-	fprintf(arq,"\t%.3f", timeTotal);
+	fprintf(arq,",%lf", ofv);
+	fprintf(arq,",%lf", ofvAverage);
+	fprintf(arq,",%.3f", timeBest);
+	fprintf(arq,",%.3f", timeTotal);
 
 	fclose(arq);
 }

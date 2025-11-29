@@ -7,7 +7,8 @@ int main()
 { 
     // file with test instances and input data
 	FILE *arqProblems; 
-    arqProblems = fopen ("testScenario.csv", "r"); 
+    arqProblems = fopen ("testScenarioAll.csv", "r");
+    // arqProblems = fopen ("E:/repos/BRKGA-QL_v2.0/Program/testScenarioAll.csv", "r");
 
     if (arqProblems == NULL){
         printf("\nERROR: File testScenario.csv not found\n");
@@ -278,7 +279,7 @@ void BRKGA_QL()
         if (numLS > 0){   
 
             //apply local search when BRKGA found a new better solution or n*pe generations without improvements
-            if (R >= 1 || noImprov > (int)n*pe){
+            if (noImprov > (int)n*pe/5){
 
                 // restart the count of generations without improvements (local search)
                 noImprov = 0;
@@ -312,7 +313,7 @@ void BRKGA_QL()
                     // local search not influence the evolutionary process
                     TSol s = Pop[promisingSol[i]];
                     LocalSearch(s,n,numLS);
-                    updateBestSolution(s);                    
+                    updateBestSolutionLS(s);
 
                     // set flag as 1 to prevent new local search in the same solution
                     Pop[promisingSol[i]].flag = 1;
@@ -400,8 +401,22 @@ void BRKGA_QL()
     }
 }
 
+void updateBestSolutionLS(TSol s) {
+    // sanityCheck(s);
+
+    // save the best solution found
+    if (s.ofv < bestSolution.ofv)
+    {
+        // printf("\nBefore LS:%f After LS: %f\n", bestSolution.ofv, s.ofv);
+        bestSolution = s;
+        gettimeofday(&Tbest, NULL);
+    }
+}
+
 void updateBestSolution(TSol s)
 {
+    // sanityCheck(s);
+
     // save the best solution found 
     if (s.ofv < bestSolution.ofv)
     {

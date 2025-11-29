@@ -37,6 +37,8 @@
 *************************************************************************************/
 void BRKGA_QL();
 
+void updateBestSolutionLS(TSol s);
+
 /************************************************************************************
  Method: updateBestSolution()
  Description: Update the best solution found during the run

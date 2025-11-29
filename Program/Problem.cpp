@@ -175,10 +175,46 @@ void LocalSearch(TSol &s, int n, int nLS)
             case 2:
                 LS2(s, sortedDeliveriesByValue);
                 break;
-            case 3:
+            default:
+                break;
+        }
+
+        // we better the current solution
+        if (s.ofv < foCurrent)
+        {
+            // refresh NSL
+            NSL.clear();
+            NSL = NSLAux;
+        }
+        else
+        {
+            // Remove N(n) from NSL
+            NSL.erase(NSL.begin()+pos);
+        }
+    } //end while
+
+    for (int i=1; i<=nLS; i++)
+    {
+        NSL.push_back(i);
+        NSLAux.push_back(i);
+    }
+
+    while (!NSL.empty())
+    {
+        // current objective function
+        double foCurrent = s.ofv;
+
+        // randomly choose a neighborhood
+        int pos = rand() % NSL.size();
+        k = NSL[pos];
+
+        switch (k)
+        {
+            case 1:
                 LS1Exact(s);
                 break;
-            case 4:
+
+            case 2:
                 LS2Exact(s);
                 break;
             default:
