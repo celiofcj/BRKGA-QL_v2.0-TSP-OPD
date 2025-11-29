@@ -48,6 +48,12 @@ void Decoder(TSol &s, int n, int nDec);
 *************************************************************************************/
 void LocalSearch(TSol &s, int n, int nLS);
 
+/************************************************************************************
+ Method: LocalSearchExactDeliveries
+ Description: RVND
+*************************************************************************************/
+void LocalSearchExactDeliveries(TSol &s, int n, int nLS);
+
 
 /************************************************************************************
  Method: CalculateFitness
@@ -89,25 +95,25 @@ void Dec5(TSol &s, int n);
  Method: LS1
  Description: NodeExchange
 *************************************************************************************/
-void LS1(TSol &s, int n, std::vector<int> &sortedDeliveriesByValue);
+void LS1(TSol &s, std::vector<int> &sortedDeliveriesByValue);
+
+/************************************************************************************
+ Method: LS1Exact
+ Description: NodeExchange
+*************************************************************************************/
+void LS1Exact(TSol &s);
 
 /************************************************************************************
  Method: LS2
  Description: NodeInsertion
 *************************************************************************************/
-void LS2(TSol &s, int n, std::vector<int> &sortedDeliveriesByValue);
+void LS2(TSol &s, std::vector<int> &sortedDeliveriesByValue);
 
 /************************************************************************************
- Method: LS3
- Description: NodeExchange
+ Method: LS2Exact
+ Description: NodeInsertion
 *************************************************************************************/
-void LS3(TSol &s, int n);
-
-/************************************************************************************
- Method: LS4
- Description: OrOpt2
-*************************************************************************************/
-void LS4(TSol &s, int n);
+void LS2Exact(TSol &s);
 
 /************************************************************************************
  Method: FreeMemoryProblem
