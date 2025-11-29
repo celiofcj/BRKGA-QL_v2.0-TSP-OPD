@@ -51,10 +51,10 @@ int main()
         double foBest = INFINITY,
                foAverage = 0;
 
-        float timeBest = 0,
-              timeTotal = 0;
+        float timeBest = 0, timeToBest = 0, timeTotal = 0, timeExec = 0;
 
         std::vector <double> ofvs;
+	    std::vector <float> execTimes;
         ofvs.clear();
 
         // best solutions found in MAXRUNS
@@ -92,27 +92,33 @@ int main()
             }
 
             // calculate best and average results
-            if (bestSolution.ofv < foBest)
+            if (bestSolution.ofv < foBest) {
                 foBest = bestSolution.ofv;
+                timeBest = ((Tbest.tv_sec  - Tstart.tv_sec) * 1000000u + Tbest.tv_usec - Tstart.tv_usec) / 1.e6;
+                timeToBest += ((Tbest.tv_sec  - Tstart.tv_sec) * 1000000u + Tbest.tv_usec - Tstart.tv_usec) / 1.e6;
+            }
 
+
+            timeExec = ((Tend.tv_sec  - Tstart.tv_sec) * 1000000u + Tend.tv_usec - Tstart.tv_usec) / 1.e6;
             foAverage += bestSolution.ofv;
 
             // fitness of each solution found in the runs
+            execTimes.push_back(timeExec);
             ofvs.push_back(bestSolution.ofv);
 
-            timeBest += ((Tbest.tv_sec  - Tstart.tv_sec) * 1000000u + Tbest.tv_usec - Tstart.tv_usec) / 1.e6;
+
             timeTotal += ((Tend.tv_sec  - Tstart.tv_sec) * 1000000u + Tend.tv_usec - Tstart.tv_usec) / 1.e6; 
         }
 
         // create a .csv file with average results
         foAverage = foAverage / MAXRUNS;
-        timeBest = timeBest / MAXRUNS;
-        timeTotal = timeTotal / MAXRUNS;
+        // timeBest = timeBest / MAXRUNS;
+        // timeTotal = timeTotal / MAXRUNS;
 
         if (!debug)
         {
         	WriteSolution(sBest, n, timeBest, timeTotal, instance);
-        	WriteResults(foBest, foAverage, ofvs, timeBest, timeTotal, instance);
+        	WriteResults(foBest, foAverage, ofvs, execTimes, timeBest, timeToBest, timeTotal, instance);
         }
         else
         {
