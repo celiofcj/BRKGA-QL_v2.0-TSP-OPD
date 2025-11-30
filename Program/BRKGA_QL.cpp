@@ -8,7 +8,7 @@ int main()
     // file with test instances and input data
 	FILE *arqProblems; 
     arqProblems = fopen ("testScenarioAll.csv", "r");
-    // arqProblems = fopen ("E:/repos/BRKGA-QL_v2.0/Program/testScenarioAll.csv", "r");
+    // arqProblems = fopen ("E:/repos/BRKGA-QL_v2.0/Program/testScenario.csv", "r");
 
     if (arqProblems == NULL){
         printf("\nERROR: File testScenario.csv not found\n");
@@ -284,7 +284,7 @@ void BRKGA_QL()
         // Verify if there are local search heuristics 
         if (numLS > 0){   
 
-            //apply local search when BRKGA found a new better solution or n*pe generations without improvements
+            //apply local search when n*pe generations without improvements
             if (noImprov > (int)n*pe/5){
 
                 // restart the count of generations without improvements (local search)

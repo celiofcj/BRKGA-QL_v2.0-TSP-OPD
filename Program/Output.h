@@ -67,11 +67,11 @@ void WriteSolution(TSol s, int n, float timeBest, float timeTotal, char instance
 void WriteResults(double ofv, double ofvAverage, std::vector <double> &ofvs, std::vector<float> &execTimes, float timeBest, float timeToBest, float timeTotal, char instance[])
 {
 	FILE *arq;
-    arq = fopen("../Results/Results2.csv","a");
+    arq = fopen("../Results/ls-no-exact/Results.csv","a");
 
 	if (!arq)
 	{
-		printf("\n\nFile not found Results.xls!!!");
+		printf("\n\nFile not found Results.csv!!!");
 		getchar();
 		exit(1);
 	}

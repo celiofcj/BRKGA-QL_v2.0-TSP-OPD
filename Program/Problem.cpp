@@ -238,60 +238,6 @@ void LocalSearch(TSol &s, int n, int nLS)
 
 }
 
-void LocalSearchExactDeliveries(TSol &s, int n, int nLS)
-{
-    // ***** we use a Random Variable Neighborhood Descent (RVND) as local search ****
-
-    int routeLength = dist.size();
-    std::vector<int> sortedDeliveriesByValue = ObtainSortedDeliveries(s, n, routeLength);
-
-    int k = 1;
-    std::vector <int> NSL;
-    std::vector <int> NSLAux;
-
-    for (int i=1; i<=nLS; i++)
-    {
-        NSL.push_back(i);
-        NSLAux.push_back(i);
-    }
-
-    while (!NSL.empty())
-    {
-        // current objective function
-        double foCurrent = s.ofv;
-
-        // randomly choose a neighborhood
-        int pos = rand() % NSL.size();
-        k = NSL[pos];
-
-        switch (k)
-        {
-            case 1:
-                LS1Exact(s);
-                break;
-                //
-            case 2:
-                LS2Exact(s);
-                break;
-            default:
-                break;
-        }
-
-        // we better the current solution
-        if (s.ofv < foCurrent)
-        {
-            // refresh NSL
-            NSL.clear();
-            NSL = NSLAux;
-        }
-        else
-        {
-            // Remove N(n) from NSL
-            NSL.erase(NSL.begin()+pos);
-        }
-    } //end while
-}
-
 double CalculateFitness(TSol &s, int n, long nodeSize)
 {
     s.ofv = 0;
