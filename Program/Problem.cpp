@@ -192,7 +192,6 @@ void LocalSearch(TSol &s, int n, int nLS)
             NSL.erase(NSL.begin()+pos);
         }
     } //end while
-
     for (int i=1; i<=nLS; i++)
     {
         NSL.push_back(i);
@@ -234,7 +233,6 @@ void LocalSearch(TSol &s, int n, int nLS)
             NSL.erase(NSL.begin()+pos);
         }
     } //end while
-
 
 }
 
@@ -528,11 +526,13 @@ void LS1(TSol &s, std::vector<int> &sortedDeliveriesByValue) // NodeExchange
             s.vec[i + routeLength].sol = sortedDeliveriesByValue[i];
         }
 
+        SelectDeliveries(s, dist.size() + deliveriesSize, dist.size());
+
         s.ofv = ofv;
         s.ofvR += bestFoOptR;
         s.ofvD -= bestFoOptD;
 
-        // sanityCheck(s);
+        sanityCheck(s);
     }
 }
 
@@ -710,6 +710,8 @@ void LS2(TSol &s,  std::vector<int> &sortedDeliveriesByValue) // NodeInsertion
         sol.ofvD -= bestFoOptD;
 
         s = sol;
+
+        SelectDeliveries(s, dist.size() + deliveriesSize, dist.size());
         // sanityCheck(s);
     }
 }
