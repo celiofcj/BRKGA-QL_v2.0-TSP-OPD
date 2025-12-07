@@ -26,7 +26,7 @@ char instance[100];                         // name of instance
 int numLP = 0;                              // number of LP calls
 
 // computational time (unix systems)
-struct timeval Tstart, Tend, Tbest;   
+struct timeval Tstart, TstartZero, Tend, Tbest;
 
 //BRKGA
 int n;                                      // size of cromossoms

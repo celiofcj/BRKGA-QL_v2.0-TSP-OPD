@@ -44,7 +44,7 @@ void WriteSolutionScreen(TSol s, int n, float timeBest, float timeTotal, char in
 void WriteSolution(TSol s, int n, float timeBest, float timeTotal, char instance[])
 {
 	FILE *arq;
-    arq = fopen("../Results/Solutions.txt","a");
+    arq = fopen("../Results/ls-no-exact/Solutions.txt","a");
 
 	if (!arq)
 	{
@@ -64,7 +64,7 @@ void WriteSolution(TSol s, int n, float timeBest, float timeTotal, char instance
 	fclose(arq);
 }
 
-void WriteResults(double ofv, double ofvAverage, std::vector <double> &ofvs, std::vector<float> &execTimes, float timeBest, float timeToBest, float timeTotal, char instance[])
+void WriteResults(double ofv, double ofvAverage, std::vector <double> &ofvs, std::vector<float> &execTimes, std::vector<float> &bestTimes, float timeToBest, float timeBestAverage, float timeBest, float timeTotal, char instance[])
 {
 	FILE *arq;
     arq = fopen("../Results/ls-no-exact/Results.csv","a");
@@ -82,12 +82,14 @@ void WriteResults(double ofv, double ofvAverage, std::vector <double> &ofvs, std
     fprintf(arq,";%d", (int)ofvs.size());
     for (unsigned int i=0; i<ofvs.size(); i++){
         fprintf(arq,";%lf", ofvs[i]);
+    	fprintf(arq,";%f", bestTimes[i]);
     	fprintf(arq,";%f", execTimes[i]);
 	}
 	fprintf(arq,";%lf", ofv);
 	fprintf(arq,";%lf", ofvAverage);
-	fprintf(arq,";%.3f", timeBest);
 	fprintf(arq,";%.3f", timeToBest);
+	fprintf(arq,";%.3f", timeBestAverage);
+	fprintf(arq,";%.3f", timeBest);
 	fprintf(arq,";%.3f", timeTotal);
 
 	fclose(arq);

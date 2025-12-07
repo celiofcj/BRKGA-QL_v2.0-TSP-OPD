@@ -1,2 +1,2 @@
-Instance	    Debug	#Decoder	#LS	Time	#Runs	#Threads	Optimal
-/TSP/berlin52.tsp	1	1	4	52	5	40	7542
+Instance	                                     Debug	#Decoder	#LS Time	#Runs	#Threads	Optimal
+/Random/random-30-100-1-strongly-corr.in            0        2         2   10       5        40          0

@@ -51,14 +51,17 @@ int main()
         double foBest = INFINITY,
                foAverage = 0;
 
-        float timeBest = 0, timeToBest = 0, timeTotal = 0, timeExec = 0;
+        float timeBest = 0, timeToBest = 0, timeTotal = 0, timeExec = 0, timeBestAverage = 0, localTimeBest = 0;
 
         std::vector <double> ofvs;
 	    std::vector <float> execTimes;
+	    std::vector <float> localBestTimes;
         ofvs.clear();
 
         // best solutions found in MAXRUNS
         sBest.ofv = INFINITY;
+
+	    gettimeofday(&TstartZero, NULL);
 
 		// run BRKGA-QL MaxRuns for each instance
         printf("\n\nInstance: %s \nRun: ", instance);
@@ -95,15 +98,17 @@ int main()
             if (bestSolution.ofv < foBest) {
                 foBest = bestSolution.ofv;
                 timeBest = ((Tbest.tv_sec  - Tstart.tv_sec) * 1000000u + Tbest.tv_usec - Tstart.tv_usec) / 1.e6;
-                timeToBest += ((Tbest.tv_sec  - Tstart.tv_sec) * 1000000u + Tbest.tv_usec - Tstart.tv_usec) / 1.e6;
+                timeToBest = ((Tbest.tv_sec  - TstartZero.tv_sec) * 1000000u + Tbest.tv_usec - Tstart.tv_usec) / 1.e6;
             }
 
-
+            localTimeBest = ((Tbest.tv_sec  - Tstart.tv_sec) * 1000000u + Tbest.tv_usec - Tstart.tv_usec) / 1.e6;
+            timeBestAverage += ((Tbest.tv_sec  - Tstart.tv_sec) * 1000000u + Tbest.tv_usec - Tstart.tv_usec) / 1.e6;
             timeExec = ((Tend.tv_sec  - Tstart.tv_sec) * 1000000u + Tend.tv_usec - Tstart.tv_usec) / 1.e6;
             foAverage += bestSolution.ofv;
 
             // fitness of each solution found in the runs
             execTimes.push_back(timeExec);
+            localBestTimes.push_back(localTimeBest);
             ofvs.push_back(bestSolution.ofv);
 
 
@@ -111,6 +116,7 @@ int main()
         }
 
         // create a .csv file with average results
+	    timeBestAverage = timeBestAverage / MAXRUNS;
         foAverage = foAverage / MAXRUNS;
         // timeBest = timeBest / MAXRUNS;
         // timeTotal = timeTotal / MAXRUNS;
@@ -118,7 +124,7 @@ int main()
         if (!debug)
         {
         	WriteSolution(sBest, n, timeBest, timeTotal, instance);
-        	WriteResults(foBest, foAverage, ofvs, execTimes, timeBest, timeToBest, timeTotal, instance);
+        	WriteResults(foBest, foAverage, ofvs, execTimes, localBestTimes, timeToBest, timeBestAverage, timeBest, timeTotal, instance);
         }
         else
         {
